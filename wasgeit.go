@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+
 	"github.com/bjorm/wasgeit/crawler"
 	"github.com/golang/glog"
 )
@@ -14,10 +15,9 @@ func main() {
 		if err != nil {
 			glog.Infof("Error: %q", err)
 		} else {
-			glog.Infof("%#v", events)
+			glog.Infof("%v", events)
 		}
 	}
 
 	glog.Flush()
 }
-
