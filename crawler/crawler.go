@@ -37,12 +37,13 @@ type Crawler interface {
 }
 
 type HTMLCrawler struct {
-	venue         Venue
-	eventSelector string
-	titleSelector string
-	timeSelector  string
-	timeFormat    string
-	linkBuilder   func(*HTMLCrawler, *goquery.Selection) string
+	venue               Venue
+	eventSelector       string
+	titleSelector       string
+	timeSelector        string
+	timeParsePreProcess func(string) string
+	timeFormat          string
+	linkBuilder         func(*HTMLCrawler, *goquery.Selection) string
 }
 
 func (cr *HTMLCrawler) Crawl() (events []Event, err error) {
@@ -73,16 +74,14 @@ func (cr *HTMLCrawler) getEventTime(event *goquery.Selection) (*time.Time, error
 		return nil, fmt.Errorf("Time selector yielded empty string")
 	}
 
-	// TODO improve readability
-	timeStr = Stencil(cr.timeFormat, timeStr)
-	timeFormat := stripDashes(cr.timeFormat)
-
-	eventTime, timeParseError := monday.ParseInLocation(timeFormat, timeStr, location, monday.LocaleDeDE)
+	timeStr = cr.timeParsePreProcess(timeStr)
+	eventTime, timeParseError := monday.ParseInLocation(cr.timeFormat, timeStr, location, monday.LocaleDeDE)
 
 	if timeParseError != nil {
 		return nil, timeParseError
 	}
 
+	// TODO maybe move this into post-process method
 	// Some sites publish their events without specifying a year, we assume they take place this year.
 	if eventTime.Year() == 0 {
 		eventTime = eventTime.AddDate(time.Now().Year(), 0, 0)
@@ -99,7 +98,10 @@ var kairoCrawler = HTMLCrawler{
 	venue:         Venue{ID: 1, Name: "Cafe Kairo", URL: "http://www.cafe-kairo.ch/kultur"},
 	eventSelector: "article",
 	timeSelector:  "time",
-	timeFormat:    "---02.01.2006",
+	timeFormat:    "02.01.2006",
+	timeParsePreProcess: func(timeString string) string {
+		return timeString[3:13]
+	},
 	titleSelector: "h1",
 	linkBuilder: func(crawler *HTMLCrawler, eventSelection *goquery.Selection) string {
 		if id, exists := eventSelection.Attr("id"); exists {
@@ -112,7 +114,9 @@ var dachstockCrawler = HTMLCrawler{
 	venue:         Venue{ID: 2, Name: "Dachstock", URL: "http://www.dachstock.ch"},
 	eventSelector: ".em-eventlist-event",
 	timeSelector:  ".em-eventlist-date",
-	timeFormat:    "-----2.1 2006  ", // TODO fix hack with trailing space
+	timeParsePreProcess: func(timeString string) string {
+		return timeString[5:15]
+	},
 	titleSelector: "h3",
 	linkBuilder: func(crawler *HTMLCrawler, _ *goquery.Selection) string {
 		return crawler.venue.URL
@@ -122,7 +126,10 @@ var turnhalleCrawler = HTMLCrawler{
 	venue:         Venue{ID: 2, Name: "Turnhalle", URL: "http://www.turnhalle.ch"},
 	eventSelector: ".event",
 	timeSelector:  "h4",
-	timeFormat:    "----02. 01. 06",
+	timeFormat:    "02. 01. 06",
+	timeParsePreProcess: func(timeString string) string {
+		return timeString[4:14]
+	},
 	titleSelector: "h2",
 	linkBuilder: func(crawler *HTMLCrawler, eventSelection *goquery.Selection) string {
 		if href, exists := eventSelection.Find("a").Attr("href"); exists {
@@ -135,7 +142,10 @@ var brasserieLorraineCrawler = HTMLCrawler{
 	venue:         Venue{ID: 2, Name: "Brasserie Lorraine", URL: "http://brasserie-lorraine.ch/?post_type=tribe_events"},
 	eventSelector: ".type-tribe_events",
 	timeSelector:  ".tribe-event-date-start",
-	timeFormat:    "January 02 ", // TODO fix hack with trailing space
+	timeFormat:    "January 02",
+	timeParsePreProcess: func(timeString string) string {
+		return timeString[:11]
+	},
 	titleSelector: ".tribe-events-list-event-title",
 	linkBuilder: func(crawler *HTMLCrawler, eventSelection *goquery.Selection) string {
 		if href, exists := eventSelection.Find("h2 > a").Attr("href"); exists {
@@ -144,8 +154,59 @@ var brasserieLorraineCrawler = HTMLCrawler{
 		return crawler.venue.URL // TODO set as default in Crawl if this function returns ""
 	}}
 
+var kofmehlCrawler = HTMLCrawler{
+	venue:         Venue{ID: 2, Name: "Kofmehl", URL: "http://www.kofmehl.net"},
+	eventSelector: ".events__element",
+	timeSelector:  "time",
+	timeFormat:    "02.01",
+	timeParsePreProcess: func(timeString string) string {
+		return timeString[3:8]
+	},
+	titleSelector: ".events__title",
+	linkBuilder: func(crawler *HTMLCrawler, eventSelection *goquery.Selection) string {
+		if href, exists := eventSelection.Find("a.events__link").Attr("href"); exists {
+			return fmt.Sprintf("%s%s", crawler.venue.URL, href)
+		}
+		return crawler.venue.URL // TODO set as default in Crawl if this function returns ""
+	}}
+
+var kiffCrawler = HTMLCrawler{
+	venue:         Venue{ID: 2, Name: "Kiff", URL: "http://www.kiff.ch"},
+	eventSelector: ".programm-grid a",
+	timeSelector:  ".event-date",
+	timeFormat:    "02 Jan",
+	timeParsePreProcess: func(timeString string) string {
+		return timeString[3:9]
+	},
+	titleSelector: ".event-title-wrapper > h2",
+	linkBuilder: func(crawler *HTMLCrawler, eventSelection *goquery.Selection) string {
+		if href, exists := eventSelection.Attr("href"); exists {
+			return fmt.Sprintf("%s%s", crawler.venue.URL, href)
+		}
+		return crawler.venue.URL // TODO set as default in Crawl if this function returns ""
+	}}
+
+var coqDorCrawler = HTMLCrawler{
+	venue:         Venue{ID: 2, Name: "Coq d'Or", URL: "http://www.coq-d-or.ch/"},
+	eventSelector: "#main table",
+	timeSelector:  "td.list_first a",
+	timeFormat:    "02.01.06",
+	timeParsePreProcess: func(timeString string) string {
+		return strings.Split(timeString, ", ")[1]
+	},
+	titleSelector: "td.list_second h2",
+	linkBuilder: func(crawler *HTMLCrawler, eventSelection *goquery.Selection) string {
+		if href, exists := eventSelection.Find("td.list_second h2 a").Attr("href"); exists {
+			return href
+		}
+		return crawler.venue.URL // TODO set as default in Crawl if this function returns ""
+	}}
+
 var Crawlers = []Crawler{
+	&kiffCrawler,
+	&kofmehlCrawler,
 	&kairoCrawler,
+	&coqDorCrawler,
 	&dachstockCrawler,
 	&turnhalleCrawler,
 	&brasserieLorraineCrawler}
