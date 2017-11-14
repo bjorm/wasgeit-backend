@@ -38,13 +38,12 @@ type Crawler interface {
 }
 
 type HTMLCrawler struct {
-	venue               Venue
-	eventSelector       string
-	titleSelector       string
-	timeSelector        string
-	timeParsePreProcess func(string) string
-	timeFormat          string
-	linkBuilder         func(*HTMLCrawler, *goquery.Selection) string
+	venue             Venue
+	eventSelector     string
+	titleSelector     string
+	getDateTimeString func(*goquery.Selection) string
+	timeFormat        string
+	linkBuilder       func(*HTMLCrawler, *goquery.Selection) string
 }
 
 func (cr *HTMLCrawler) Venue() Venue {
@@ -60,9 +59,9 @@ func (cr *HTMLCrawler) Crawl() (events []Event, err error) {
 	document.Find(cr.eventSelector).Each(func(_ int, eventSelection *goquery.Selection) {
 		title := getTrimmedText(eventSelection, cr.titleSelector)
 		time, err := cr.getEventTime(eventSelection)
-
 		if err == nil {
 			linkURL := cr.linkBuilder(cr, eventSelection)
+			fmt.Println(title)
 			event := Event{DateTime: *time, Title: title, URL: linkURL, Venue: cr.venue}
 			events = append(events, event)
 		} else {
@@ -74,13 +73,12 @@ func (cr *HTMLCrawler) Crawl() (events []Event, err error) {
 }
 
 func (cr *HTMLCrawler) getEventTime(event *goquery.Selection) (*time.Time, error) {
-	timeStr := getTrimmedText(event, cr.timeSelector)
+	timeStr := cr.getDateTimeString(event)
 
 	if timeStr == "" {
 		return nil, fmt.Errorf("Time selector yielded empty string")
 	}
 
-	timeStr = cr.timeParsePreProcess(timeStr)
 	timeStr = strings.TrimSpace(timeStr)
 	eventTime, timeParseError := monday.ParseInLocation(cr.timeFormat, timeStr, location, monday.LocaleDeDE)
 
@@ -97,12 +95,19 @@ func (cr *HTMLCrawler) getEventTime(event *goquery.Selection) (*time.Time, error
 	return &eventTime, nil
 }
 
-func getTrimmedText(selection *goquery.Selection, selector string) string {
-	return strings.TrimSpace(selection.Find(selector).Text())
-}
-
 func returnStringSlice(start int, end int) func(string) string {
 	return func(toSlice string) string {
 		return toSlice[start:end]
 	}
+}
+
+func getTrimmedText(selection *goquery.Selection, selector string) string {
+	return strings.TrimSpace(selection.Find(selector).Text())
+}
+
+var wrp = strings.NewReplacer("\u00a0", "", "\n", "", "\t", "")
+
+// StripSomeWhiteSpaces strips the following whitespaces: \u00a0, \n, \t
+func StripSomeWhiteSpaces(toStrip string) string {
+	return wrp.Replace(toStrip)
 }
