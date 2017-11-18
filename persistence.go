@@ -1,13 +1,15 @@
-package main
+package wasgeit
 
 import (
 	"database/sql"
-	"fmt"
 
 	"github.com/golang/glog"
 	_ "github.com/mattn/go-sqlite3"
 )
 
+const schemaVersion = 1
+
+// create struct
 var db *sql.DB
 
 func OpenDb() error {
@@ -19,19 +21,23 @@ func OpenDb() error {
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
 func CloseDb() error {
 	glog.Infof("Closing db")
+
 	if db != nil {
 		return db.Close()
 	}
+
 	return nil
 }
 
 func StoreEvent(ev Event) error {
 	tx, err := db.Begin()
+
 	if err != nil {
 		return err
 	}
@@ -53,18 +59,7 @@ func StoreEvent(ev Event) error {
 	return nil
 }
 
-var schema = `
-CREATE TABLE venues (id INTEGER PRIMARY KEY, name TEXT UNIQUE, url TEXT);
-CREATE TABLE events (id INTEGER PRIMARY KEY, title TEXT, date TEXT, url TEXT UNIQUE);
-`
-
-func CreateTables() error {
-	if db == nil {
-		return fmt.Errorf("Need to connect to DB first")
-	}
-	_, err := db.Exec(schema)
-	if err != nil {
-		return err
-	}
+func GetEvents() []Event {
+	// db.Query("SELECT * FROM events where date > DATE('now', '-1 day')")
 	return nil
 }

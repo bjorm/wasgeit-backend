@@ -1,4 +1,4 @@
-package main
+package wasgeit
 
 import (
 	"fmt"
@@ -26,9 +26,10 @@ type Event struct {
 
 // Venue describes a place where Events take place
 type Venue struct {
-	ID   int64
-	Name string
-	URL  string
+	ID        int64
+	ShortName string
+	Name      string
+	URL       string
 }
 
 // Crawler describes  a crawler
@@ -39,11 +40,11 @@ type Crawler interface {
 
 type HTMLCrawler struct {
 	venue             Venue
-	eventSelector     string
-	titleSelector     string
-	getDateTimeString func(*goquery.Selection) string
-	timeFormat        string
-	linkBuilder       func(*HTMLCrawler, *goquery.Selection) string
+	EventSelector     string
+	TitleSelector     string
+	GetDateTimeString func(*goquery.Selection) string
+	TimeFormat        string
+	LinkBuilder       func(*HTMLCrawler, *goquery.Selection) string
 }
 
 func (cr *HTMLCrawler) Venue() Venue {
@@ -56,11 +57,11 @@ func (cr *HTMLCrawler) Crawl() (events []Event, err error) {
 		return events, loadError
 	}
 
-	document.Find(cr.eventSelector).Each(func(_ int, eventSelection *goquery.Selection) {
-		title := getTrimmedText(eventSelection, cr.titleSelector)
+	document.Find(cr.EventSelector).Each(func(_ int, eventSelection *goquery.Selection) {
+		title := getTrimmedText(eventSelection, cr.TitleSelector)
 		time, err := cr.getEventTime(eventSelection)
 		if err == nil {
-			linkURL := cr.linkBuilder(cr, eventSelection)
+			linkURL := cr.LinkBuilder(cr, eventSelection)
 			fmt.Println(title)
 			event := Event{DateTime: *time, Title: title, URL: linkURL, Venue: cr.venue}
 			events = append(events, event)
@@ -73,14 +74,14 @@ func (cr *HTMLCrawler) Crawl() (events []Event, err error) {
 }
 
 func (cr *HTMLCrawler) getEventTime(event *goquery.Selection) (*time.Time, error) {
-	timeStr := cr.getDateTimeString(event)
+	timeStr := cr.GetDateTimeString(event)
 
 	if timeStr == "" {
 		return nil, fmt.Errorf("Time selector yielded empty string")
 	}
 
 	timeStr = strings.TrimSpace(timeStr)
-	eventTime, timeParseError := monday.ParseInLocation(cr.timeFormat, timeStr, location, monday.LocaleDeDE)
+	eventTime, timeParseError := monday.ParseInLocation(cr.TimeFormat, timeStr, location, monday.LocaleDeDE)
 
 	if timeParseError != nil {
 		return nil, timeParseError
