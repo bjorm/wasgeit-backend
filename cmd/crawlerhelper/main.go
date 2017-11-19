@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
-	"time"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/bjorm/wasgeit"
@@ -39,7 +38,7 @@ func main() {
 
 		doc.Find(cr.EventSelector).Each(func(_ int, firstEv *goquery.Selection) {
 			dt := cr.GetDateTimeString(firstEv)
-			pdt, _ := time.Parse(cr.TimeFormat, dt)
+			pdt, _ := cr.GetEventTime(firstEv)
 			fmt.Printf("time string: %q\n", dt)
 			fmt.Printf("parsed time: %q\n", pdt)
 			fmt.Printf("link: %q\n", cr.LinkBuilder(&cr, firstEv))

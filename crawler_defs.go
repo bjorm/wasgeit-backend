@@ -2,19 +2,23 @@ package wasgeit
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
 )
 
+var dateTimeRe = regexp.MustCompile(`(\d{1,2}.\d{1,2} \d{4}) - Doors: (\d{2}:\d{2})`)
+var timeRe = regexp.MustCompile(`\d{2}:\d{2}`)
+
 var kairoCrawler = HTMLCrawler{
 	venue:         Venue{ID: 1, Name: "Cafe Kairo", ShortName: "kairo", URL: "http://www.cafe-kairo.ch/kultur"},
 	EventSelector: "article[id]",
-	TimeFormat:    "02.01.2006",
+	TimeFormat:    "02.01.200615:04",
 	GetDateTimeString: func(eventSelection *goquery.Selection) string {
 		rawDateTimeString := eventSelection.Find(".concerts_date").Parent().Text()
 		fmt.Printf("extracted time: %q\n", rawDateTimeString)
-		return rawDateTimeString[3:13]
+		return rawDateTimeString[3:13] + rawDateTimeString[19:24]
 	},
 	TitleSelector: "h1",
 	LinkBuilder: func(crawler *HTMLCrawler, eventSelection *goquery.Selection) string {
@@ -30,7 +34,8 @@ var dachstockCrawler = HTMLCrawler{
 	TimeFormat:    "2.1 200615:04",
 	GetDateTimeString: func(eventSelection *goquery.Selection) string {
 		rawDateTimeString := eventSelection.Find(".em-eventlist-date").Text()
-		return rawDateTimeString[5:15] + rawDateTimeString[25:29]
+		captures := dateTimeRe.FindStringSubmatch(rawDateTimeString)
+		return captures[1] + captures[2]
 	},
 	TitleSelector: "h3",
 	LinkBuilder: func(crawler *HTMLCrawler, _ *goquery.Selection) string {
@@ -40,11 +45,16 @@ var dachstockCrawler = HTMLCrawler{
 var turnhalleCrawler = HTMLCrawler{
 	venue:         Venue{ID: 2, Name: "Turnhalle", ShortName: "turnhalle", URL: "http://www.turnhalle.ch"},
 	EventSelector: ".event",
-	TimeFormat:    "02. 01. 06",
+	TimeFormat:    "02. 01. 0615:04",
 	GetDateTimeString: func(eventSelection *goquery.Selection) string {
 		rawDateTimeString := eventSelection.Find("h4").Text()
-		dateString := rawDateTimeString[5:15]
-		return dateString
+		dateString := rawDateTimeString[4:14]
+		matches := timeRe.FindAllStringSubmatch(rawDateTimeString, 2)
+		var timeString string
+		if len(matches) > 0 && len(matches[0]) == 1 {
+			timeString = matches[0][0]
+		}
+		return dateString + timeString
 	},
 	TitleSelector: "h2",
 	LinkBuilder: func(crawler *HTMLCrawler, eventSelection *goquery.Selection) string {
@@ -57,11 +67,11 @@ var turnhalleCrawler = HTMLCrawler{
 var brasserieLorraineCrawler = HTMLCrawler{
 	venue:         Venue{ID: 2, Name: "Brasserie Lorraine", ShortName: "brasserie-lorraine", URL: "http://brasserie-lorraine.ch/?post_type=tribe_events"},
 	EventSelector: ".type-tribe_events",
-	TimeFormat:    "January 02",
+	TimeFormat:    "January 2",
 	GetDateTimeString: func(eventSelection *goquery.Selection) string {
 		rawDateTimeString := eventSelection.Find(".tribe-event-date-start").Text()
 		dateString := rawDateTimeString[0:11]
-		return dateString
+		return strings.TrimSpace(dateString)
 	},
 	TitleSelector: ".tribe-events-list-event-title",
 	LinkBuilder: func(crawler *HTMLCrawler, eventSelection *goquery.Selection) string {
@@ -90,7 +100,7 @@ var kofmehlCrawler = HTMLCrawler{
 
 var kiffCrawler = HTMLCrawler{
 	venue:         Venue{ID: 2, Name: "Kiff", ShortName: "kiff", URL: "http://www.kiff.ch"},
-	EventSelector: ".programm-grid a",
+	EventSelector: ".programm-grid a:not(.teaserlink)",
 	TimeFormat:    "2 Jan",
 	GetDateTimeString: func(eventSelection *goquery.Selection) string {
 		return eventSelection.Find(".event-date").Text()[3:]
@@ -105,12 +115,14 @@ var kiffCrawler = HTMLCrawler{
 
 var coqDorCrawler = HTMLCrawler{
 	venue:         Venue{ID: 2, Name: "Coq d'Or", ShortName: "coq-d-or", URL: "http://www.coq-d-or.ch/"},
-	EventSelector: "#main table",
-	TimeFormat:    "02.01.06",
+	EventSelector: "#main table:not(.shows)",
+	TimeFormat:    "02.01.0615:04",
 	GetDateTimeString: func(eventSelection *goquery.Selection) string {
 		rawDateTimeString := eventSelection.Find("td.list_first a").Text()
 		dateString := strings.Split(rawDateTimeString, ", ")[1]
-		return dateString
+		rawTimeString := eventSelection.Find("div.entry").Text()
+		timeString := timeRe.FindString(rawTimeString)
+		return dateString + timeString
 	},
 	TitleSelector: "td.list_second h2",
 	LinkBuilder: func(crawler *HTMLCrawler, eventSelection *goquery.Selection) string {

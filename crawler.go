@@ -59,7 +59,7 @@ func (cr *HTMLCrawler) Crawl() (events []Event, err error) {
 
 	document.Find(cr.EventSelector).Each(func(_ int, eventSelection *goquery.Selection) {
 		title := getTrimmedText(eventSelection, cr.TitleSelector)
-		time, err := cr.getEventTime(eventSelection)
+		time, err := cr.GetEventTime(eventSelection)
 		if err == nil {
 			linkURL := cr.LinkBuilder(cr, eventSelection)
 			fmt.Println(title)
@@ -73,7 +73,7 @@ func (cr *HTMLCrawler) Crawl() (events []Event, err error) {
 	return events, nil
 }
 
-func (cr *HTMLCrawler) getEventTime(event *goquery.Selection) (*time.Time, error) {
+func (cr *HTMLCrawler) GetEventTime(event *goquery.Selection) (*time.Time, error) {
 	timeStr := cr.GetDateTimeString(event)
 
 	if timeStr == "" {
