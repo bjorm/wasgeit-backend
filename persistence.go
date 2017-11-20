@@ -9,14 +9,14 @@ import (
 
 const schemaVersion = 1
 
-// create struct
-var db *sql.DB
+type Store struct {
+	db *sql.DB
+}
 
-func OpenDb() error {
+func (st *Store) Connect() error {
 	var err error
 
-	glog.Infof("Opening db")
-	db, err = sql.Open("sqlite3", "db/wasgeit.db")
+	st.db, err = sql.Open("sqlite3", "db/wasgeit.db")
 
 	if err != nil {
 		return err
@@ -25,18 +25,18 @@ func OpenDb() error {
 	return nil
 }
 
-func CloseDb() error {
+func (st *Store) Close() error {
 	glog.Infof("Closing db")
 
-	if db != nil {
-		return db.Close()
+	if st.db != nil {
+		return st.db.Close()
 	}
 
 	return nil
 }
 
-func StoreEvent(ev Event) error {
-	tx, err := db.Begin()
+func (st *Store) SaveEvent(ev Event) error {
+	tx, err := st.db.Begin()
 
 	if err != nil {
 		return err
@@ -59,7 +59,7 @@ func StoreEvent(ev Event) error {
 	return nil
 }
 
-func GetEvents() []Event {
-	// db.Query("SELECT * FROM events where date > DATE('now', '-1 day')")
+func (st *Store) GetEvents() []Event {
+	st.db.Query("SELECT * FROM events where date > DATE('now', '-1 day')")
 	return nil
 }

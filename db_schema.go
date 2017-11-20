@@ -6,15 +6,15 @@ var schema = `
 CREATE TABLE events (
 	id INTEGER PRIMARY KEY, 
 	title TEXT, date TEXT, 
-	url TEXT UNIQUE
+	url TEXT
 );
 `
 
-func CreateTables() error {
-	if db == nil {
+func (st *Store) CreateTables() error {
+	if st.db == nil {
 		return fmt.Errorf("Need to connect to DB first")
 	}
-	_, err := db.Exec(schema)
+	_, err := st.db.Exec(schema)
 	if err != nil {
 		return err
 	}
