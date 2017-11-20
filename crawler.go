@@ -62,7 +62,6 @@ func (cr *HTMLCrawler) Crawl() (events []Event, err error) {
 		time, err := cr.GetEventTime(eventSelection)
 		if err == nil {
 			linkURL := cr.LinkBuilder(cr, eventSelection)
-			fmt.Println(title)
 			event := Event{DateTime: *time, Title: title, URL: linkURL, Venue: cr.venue}
 			events = append(events, event)
 		} else {
@@ -106,7 +105,7 @@ func getTrimmedText(selection *goquery.Selection, selector string) string {
 	return strings.TrimSpace(selection.Find(selector).Text())
 }
 
-var wrp = strings.NewReplacer("\u00a0", "", "\n", "", "\t", "")
+var wrp = strings.NewReplacer("\u2009", "", "\u00a0", "", "\n", "", "\t", "")
 
 // StripSomeWhiteSpaces strips the following whitespaces: \u00a0, \n, \t
 func StripSomeWhiteSpaces(toStrip string) string {

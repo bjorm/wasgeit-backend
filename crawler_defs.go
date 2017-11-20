@@ -17,7 +17,6 @@ var kairoCrawler = HTMLCrawler{
 	TimeFormat:    "02.01.200615:04",
 	GetDateTimeString: func(eventSelection *goquery.Selection) string {
 		rawDateTimeString := eventSelection.Find(".concerts_date").Parent().Text()
-		fmt.Printf("extracted time: %q\n", rawDateTimeString)
 		return rawDateTimeString[3:13] + rawDateTimeString[19:24]
 	},
 	TitleSelector: "h1",
@@ -185,6 +184,78 @@ var heitereFahneCrawler = HTMLCrawler{
 		return crawler.venue.URL // TODO set as default in Crawl if this function returns ""
 	}}
 
+var onoCrawler = HTMLCrawler{
+	venue:         Venue{ID: 2, Name: "ONO", ShortName: "ono", URL: "http://www.onobern.ch/programm-bersicht"},
+	EventSelector: ".EventItem",
+	TimeFormat:    "02.01.0615:04",
+	GetDateTimeString: func(eventSelection *goquery.Selection) string {
+		rawDateTimeString := eventSelection.Find(".EventInfo.subnav").Text()
+		rawDateTimeString = wrp.Replace(rawDateTimeString)
+		dateString := rawDateTimeString[3:11]
+		timeString := timeRe.FindString(rawDateTimeString)
+		return dateString + timeString
+	},
+	TitleSelector: ".EventTextTitle",
+	LinkBuilder: func(crawler *HTMLCrawler, eventSelection *goquery.Selection) string {
+		if href, exists := eventSelection.Find(".EventImage a").Attr("href"); exists {
+			return fmt.Sprint(crawler.venue.URL, href)
+		}
+		return crawler.venue.URL // TODO set as default in Crawl if this function returns ""
+	}}
+
+var martaCrawler = HTMLCrawler{
+	venue:         Venue{ID: 2, Name: "Cafe Marta", ShortName: "marta", URL: "http://www.cafemarta.ch/musik"},
+	EventSelector: "table.music tbody tr",
+	TimeFormat:    "02.01.200615:04",
+	GetDateTimeString: func(eventSelection *goquery.Selection) string {
+		dateString := eventSelection.Find("td:nth-child(1)").Text()
+		rawTimeString := eventSelection.Find("td:nth-child(4)").Text()
+		timeString := timeRe.FindString(rawTimeString)
+		return dateString + timeString
+	},
+	TitleSelector: "td:nth-child(3) p",
+	LinkBuilder: func(crawler *HTMLCrawler, eventSelection *goquery.Selection) string {
+		if href, exists := eventSelection.Find(".EventImage a").Attr("href"); exists {
+			return fmt.Sprint(crawler.venue.URL, href)
+		}
+		return crawler.venue.URL // TODO set as default in Crawl if this function returns ""
+	}}
+
+var bierhuebeliCrawler = HTMLCrawler{
+	venue:         Venue{ID: 2, Name: "Bierhuebeli", ShortName: "bierhuebeli", URL: "http://www.bierhuebeli.ch/veranstaltungen/"},
+	EventSelector: "ul.bh-event-list.all-events li",
+	TimeFormat:    "02.01.06",
+	GetDateTimeString: func(eventSelection *goquery.Selection) string {
+		rawTimeString := eventSelection.Find(".evendates").Text()
+		return rawTimeString[8:16]
+	},
+	TitleSelector: ".eventlink a",
+	LinkBuilder: func(crawler *HTMLCrawler, eventSelection *goquery.Selection) string {
+		if href, exists := eventSelection.Find(".eventlink a").Attr("href"); exists {
+			return href
+		}
+		return crawler.venue.URL // TODO set as default in Crawl if this function returns ""
+	}}
+var dampfzentraleCrawler = HTMLCrawler{
+	venue:         Venue{ID: 2, Name: "Dampfzentrale", ShortName: "dampfzentrale", URL: "http://dampfzentrale.ch/programm/"},
+	EventSelector: "article .agenda-container",
+	TimeFormat:    "2.1.15:04",
+	GetDateTimeString: func(eventSelection *goquery.Selection) string {
+		article := eventSelection.Parent().Parent()
+		month, _ := article.Attr("data-month")
+		day, _ := article.Attr("data-date")
+		dateString := fmt.Sprintf("%s.%s.", day, month)
+		timeString := strings.TrimSpace(eventSelection.Find(".agenda-details .span1").Text())
+		return dateString + timeString
+	},
+	TitleSelector: "h1.agenda-title",
+	LinkBuilder: func(crawler *HTMLCrawler, eventSelection *goquery.Selection) string {
+		if id, exists := eventSelection.Parent().Attr("id"); exists {
+			return fmt.Sprintf("%s#%s", crawler.venue.URL, id)
+		}
+		return crawler.venue.URL // TODO set as default in Crawl if this function returns ""
+	}}
+
 var HTMLCrawlers = map[string]HTMLCrawler{
 	iscCrawler.venue.ShortName:               iscCrawler,
 	kiffCrawler.venue.ShortName:              kiffCrawler,
@@ -195,7 +266,11 @@ var HTMLCrawlers = map[string]HTMLCrawler{
 	turnhalleCrawler.venue.ShortName:         turnhalleCrawler,
 	brasserieLorraineCrawler.venue.ShortName: brasserieLorraineCrawler,
 	mahoganyHallCrawler.venue.ShortName:      mahoganyHallCrawler,
-	heitereFahneCrawler.venue.ShortName:      heitereFahneCrawler}
+	heitereFahneCrawler.venue.ShortName:      heitereFahneCrawler,
+	onoCrawler.venue.ShortName:               onoCrawler,
+	martaCrawler.venue.ShortName:             martaCrawler,
+	bierhuebeliCrawler.venue.ShortName:       bierhuebeliCrawler,
+	dampfzentraleCrawler.venue.ShortName:     dampfzentraleCrawler}
 
 var Crawlers = []Crawler{
 	&iscCrawler,
@@ -207,16 +282,16 @@ var Crawlers = []Crawler{
 	&turnhalleCrawler,
 	&brasserieLorraineCrawler,
 	&mahoganyHallCrawler,
-	&heitereFahneCrawler}
+	&heitereFahneCrawler,
+	&onoCrawler,
+	&martaCrawler,
+	&bierhuebeliCrawler,
+	&dampfzentraleCrawler}
 
 // http://wartsaal-kaffee.ch/veranstaltungen/
 // https://www.facebook.com/pg/CaffeBarSattler/events/t
 // http://www.cafete.ch/
-// http://www.cafemarta.ch/musik
-// http://www.onobern.ch/programm-bersicht/
 // http://www.schlachthaus.ch/spielplan/index.php
-// http://dampfzentrale.ch/programm/
-// http://www.bierhuebeli.ch/veranstaltungen/
 // https://www.effinger.ch/events/
 // https://www.facebook.com/pg/loescherbern/events/?ref=page_internal
 // https://www.facebook.com/peterflamingobern/
