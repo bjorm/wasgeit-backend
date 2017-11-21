@@ -2,10 +2,11 @@ package wasgeit
 
 import (
 	"database/sql"
-
-	"github.com/golang/glog"
+	"github.com/op/go-logging"
 	_ "github.com/mattn/go-sqlite3"
 )
+
+var log = logging.MustGetLogger("persistence")
 
 const schemaVersion = 1
 
@@ -26,7 +27,7 @@ func (st *Store) Connect() error {
 }
 
 func (st *Store) Close() error {
-	glog.Infof("Closing db")
+	log.Info("Closing db")
 
 	if st.db != nil {
 		return st.db.Close()

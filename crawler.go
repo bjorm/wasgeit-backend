@@ -5,8 +5,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang/glog"
-
 	"github.com/PuerkitoBio/goquery"
 	"github.com/goodsign/monday"
 )
@@ -34,7 +32,8 @@ type Venue struct {
 
 // Crawler describes  a crawler
 type Crawler interface {
-	Crawl() ([]Event, error)
+	Get() (*goquery.Document, error)
+	Crawl(*goquery.Document) ([]Event, []error)
 	Venue() Venue
 }
 
@@ -51,25 +50,30 @@ func (cr *HTMLCrawler) Venue() Venue {
 	return cr.venue
 }
 
-func (cr *HTMLCrawler) Crawl() (events []Event, err error) {
-	document, loadError := goquery.NewDocument(cr.venue.URL)
-	if loadError != nil {
-		return events, loadError
+func (cr *HTMLCrawler) Get() (*goquery.Document, error) {
+	doc, err := goquery.NewDocument(cr.venue.URL)
+	if err != nil {
+		return nil, err
 	}
+	return doc, nil
+}
 
-	document.Find(cr.EventSelector).Each(func(_ int, eventSelection *goquery.Selection) {
+func (cr *HTMLCrawler) Crawl(doc *goquery.Document) (events []Event, errors []error) {
+
+	doc.Find(cr.EventSelector).Each(func(_ int, eventSelection *goquery.Selection) {
 		title := getTrimmedText(eventSelection, cr.TitleSelector)
-		time, err := cr.GetEventTime(eventSelection)
-		if err == nil {
+		eventTime, err := cr.GetEventTime(eventSelection)
+
+		if err == nil && eventTime.After(time.Now()) {
 			linkURL := cr.LinkBuilder(cr, eventSelection)
-			event := Event{DateTime: *time, Title: title, URL: linkURL, Venue: cr.venue}
+			event := Event{DateTime: *eventTime, Title: title, URL: linkURL, Venue: cr.venue}
 			events = append(events, event)
-		} else {
-			glog.Warningf("Skipped %q because of: %q", title, err)
+		} else if err != nil {
+			errors = append(errors, err)	
 		}
 	})
 
-	return events, nil
+	return events, errors
 }
 
 func (cr *HTMLCrawler) GetEventTime(event *goquery.Selection) (*time.Time, error) {

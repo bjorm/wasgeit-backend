@@ -155,6 +155,9 @@ var mahoganyHallCrawler = HTMLCrawler{
 		dateTimeString = StripSomeWhiteSpaces(dateTimeString)
 		dateTimeString = strings.Split(dateTimeString, ", ")[1]
 		dateTimeString = strings.Split(dateTimeString, "Uhr")[0]
+		if dateTimeString[1] == '.' {
+			return "0" + dateTimeString
+		}
 		return dateTimeString
 	},
 	TitleSelector: ".views-field-title h2",

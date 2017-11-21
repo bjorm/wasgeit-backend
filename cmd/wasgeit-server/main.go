@@ -1,14 +1,13 @@
 package main
 
 import (
-	"flag"
-
-	"github.com/golang/glog"
 	"github.com/bjorm/wasgeit"
+	"github.com/op/go-logging"
 )
 
+var log = logging.MustGetLogger("wasgeit")
+
 func main() {
-	flag.Parse() // for glog
 	store := wasgeit.Store{}
 
 	dbErr := store.Connect()
@@ -17,27 +16,35 @@ func main() {
 	}
 	defer store.Close()
 
+	// TODO
 	// dbErr = store.CreateTables()
 	// if dbErr != nil {
 	// panic(dbErr)
 	// }
 
 	for _, cr := range wasgeit.Crawlers {
-		glog.V(1).Info(cr.Venue().Name, ":")
-		
-		events, err := cr.Crawl()
+		log.Info(cr.Venue().Name)
+
+		doc, err := cr.Get()
+		events, crawlErrors := cr.Crawl(doc)
 
 		if err != nil {
-			glog.Infof("Error: %q", err)
-		} else {
-			for _, event := range events {
-				storeErr := store.SaveEvent(event)
-				if storeErr != nil {
-					glog.Warningln(storeErr)
-				}
+			log.Infof("Getting document for %q failed: %s", cr.Venue().Name, err)
+			break
+		}
+
+		var storeErrors []error
+
+		for _, event := range events {
+			storeErr := store.SaveEvent(event)
+
+			if storeErr != nil {
+				storeErrors = append(storeErrors, storeErr)
 			}
 		}
-	}
 
-	glog.Flush()
+		log.Infof("Crawl errors: %s", crawlErrors)
+		log.Infof("Store errors: %s", storeErrors)
+		log.Infof("Crawled and stored %d events successfully", len(events) - len(storeErrors))
+	}
 }
