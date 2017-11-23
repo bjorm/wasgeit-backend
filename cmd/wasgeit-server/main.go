@@ -1,6 +1,7 @@
 package main
 
 import (
+	"net/http"
 	"github.com/bjorm/wasgeit"
 	"github.com/op/go-logging"
 )
@@ -45,6 +46,13 @@ func main() {
 
 		log.Infof("Crawl errors: %s", crawlErrors)
 		log.Infof("Store errors: %s", storeErrors)
-		log.Infof("Crawled and stored %d events successfully", len(events) - len(storeErrors))
+		log.Infof("Crawled and stored %d events successfully", len(events)-len(storeErrors))
 	}
+
+	http.Handle("/events", wasgeit.NewServer(&store))
+	err := http.ListenAndServe(":8080", nil)
+	if err != nil {
+		panic(err)
+	}
+	log.Infof("Serving..")
 }

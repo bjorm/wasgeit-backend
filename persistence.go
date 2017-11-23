@@ -2,11 +2,13 @@ package wasgeit
 
 import (
 	"database/sql"
-	"github.com/op/go-logging"
+	"fmt"
+
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/op/go-logging"
 )
 
-var log = logging.MustGetLogger("persistence")
+var log = logging.MustGetLogger("wasgeit-server")
 
 const schemaVersion = 1
 
@@ -53,14 +55,34 @@ func (st *Store) SaveEvent(ev Event) error {
 
 	if err != nil {
 		tx.Rollback()
-		return err
+		return fmt.Errorf("Failed to persists %v: %s", ev, err)
 	}
 
 	tx.Commit()
 	return nil
 }
 
-func (st *Store) GetEvents() []Event {
-	st.db.Query("SELECT * FROM events where date > DATE('now', '-1 day')")
-	return nil
+func (st *Store) GetEvents() ([]Event, error) {
+	var events []Event
+	rows, err := st.db.Query("SELECT id, title, date, url FROM events where date > DATE('now', '-1 day')")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	ct, _ := rows.ColumnTypes()
+	for _, t := range ct {
+		fmt.Printf("%v\n", t)
+	}
+
+	for rows.Next() {
+		var ev Event
+		err = rows.Scan(&ev.ID, &ev.Title, &ev.DateTime, &ev.URL)
+		if err != nil {
+			fmt.Println(err)
+			return nil, err
+		}
+		events = append(events, ev)
+	}
+	return events, nil
 }
