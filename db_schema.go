@@ -5,9 +5,11 @@ import "fmt"
 var schema = `
 CREATE TABLE events (
 	id INTEGER PRIMARY KEY, 
-	title TEXT, date TEXT, 
+	title TEXT, 
+	date DATETIME, 
 	url TEXT
 );
+CREATE UNIQUE INDEX events_uq_title_date ON events(title, date);
 `
 
 func (st *Store) CreateTables() error {
