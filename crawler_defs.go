@@ -17,7 +17,8 @@ var kairoCrawler = HTMLCrawler{
 	TimeFormat:    "02.01.200615:04",
 	GetDateTimeString: func(eventSelection *goquery.Selection) string {
 		rawDateTimeString := eventSelection.Find(".concerts_date").Parent().Text()
-		return rawDateTimeString[3:13] + rawDateTimeString[19:24]
+		timeString := timeRe.FindString(rawDateTimeString)
+		return rawDateTimeString[3:13] + timeString
 	},
 	TitleSelector: "h1",
 	LinkBuilder: func(crawler *HTMLCrawler, eventSelection *goquery.Selection) string {
@@ -239,6 +240,7 @@ var bierhuebeliCrawler = HTMLCrawler{
 		}
 		return crawler.venue.URL // TODO set as default in Crawl if this function returns ""
 	}}
+
 var dampfzentraleCrawler = HTMLCrawler{
 	venue:         Venue{ID: 2, Name: "Dampfzentrale", ShortName: "dampfzentrale", URL: "http://dampfzentrale.ch/programm/"},
 	EventSelector: "article .agenda-container",
