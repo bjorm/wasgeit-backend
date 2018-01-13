@@ -1,7 +1,9 @@
 package main
 
 import (
+	"flag"
 	"net/http"
+
 	"github.com/bjorm/wasgeit"
 	"github.com/op/go-logging"
 )
@@ -9,6 +11,9 @@ import (
 var log = logging.MustGetLogger("wasgeit")
 
 func main() {
+	resetDb := flag.Bool("setup-db", false, "Whether to create DB tables")
+	flag.Parse()
+
 	store := wasgeit.Store{}
 
 	dbErr := store.Connect()
@@ -17,11 +22,13 @@ func main() {
 	}
 	defer store.Close()
 
-	// TODO
-	// dbErr = store.CreateTables()
-	// if dbErr != nil {
-	// panic(dbErr)
-	// }
+	if *resetDb {
+		log.Info("Setting up DB tables..")
+		dbErr = store.CreateTables()
+		if dbErr != nil {
+			panic(dbErr)
+		}
+	}
 
 	for _, cr := range wasgeit.Crawlers {
 		log.Info(cr.Venue().Name)
@@ -50,9 +57,9 @@ func main() {
 	}
 
 	http.Handle("/events", wasgeit.NewServer(&store))
+	log.Info("Serving..")
 	err := http.ListenAndServe(":8080", nil)
 	if err != nil {
 		panic(err)
 	}
-	log.Infof("Serving..")
 }
