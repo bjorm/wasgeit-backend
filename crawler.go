@@ -41,10 +41,15 @@ func (cr *HTMLCrawler) Get() (*goquery.Document, error) {
 	return doc, nil
 }
 
-// TODO if no events are found in document, return error
 func (cr *HTMLCrawler) Crawl(doc *goquery.Document) (events []Event, errors []error) {
+	evSel := doc.Find(cr.EventSelector)
 
-	doc.Find(cr.EventSelector).Each(func(_ int, eventSelection *goquery.Selection) {
+	if evSel.Size() == 0 {
+		errors = append(errors, fmt.Errorf("Event selector did not match anything in document"))
+		return events, errors
+	}
+
+	evSel.Each(func(_ int, eventSelection *goquery.Selection) {
 		title := getTrimmedText(eventSelection, cr.TitleSelector)
 		eventTime, err := cr.GetEventTime(eventSelection)
 
