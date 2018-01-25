@@ -13,23 +13,6 @@ var (
 	location, _ = time.LoadLocation("Europe/Zurich")
 )
 
-// Event describes an event taking place in a Venue
-type Event struct {
-	ID       int64
-	Title    string
-	DateTime time.Time
-	URL      string
-	Venue    Venue
-}
-
-// Venue describes a place where Events take place
-type Venue struct {
-	ID        int64
-	ShortName string
-	Name      string
-	URL       string
-}
-
 // Crawler describes  a crawler
 type Crawler interface {
 	Get() (*goquery.Document, error)
@@ -58,6 +41,7 @@ func (cr *HTMLCrawler) Get() (*goquery.Document, error) {
 	return doc, nil
 }
 
+// TODO if no events are found in document, return error
 func (cr *HTMLCrawler) Crawl(doc *goquery.Document) (events []Event, errors []error) {
 
 	doc.Find(cr.EventSelector).Each(func(_ int, eventSelection *goquery.Selection) {
@@ -69,7 +53,7 @@ func (cr *HTMLCrawler) Crawl(doc *goquery.Document) (events []Event, errors []er
 			event := Event{DateTime: *eventTime, Title: title, URL: linkURL, Venue: cr.venue}
 			events = append(events, event)
 		} else if err != nil {
-			errors = append(errors, err)	
+			errors = append(errors, err)
 		}
 	})
 
@@ -111,6 +95,7 @@ func getTrimmedText(selection *goquery.Selection, selector string) string {
 
 var wrp = strings.NewReplacer("\u2009", "", "\u00a0", "", "\n", "", "\t", "")
 
+// TODO find out why there are still whitespaces in some titles
 // StripSomeWhiteSpaces strips the following whitespaces: \u00a0, \n, \t
 func StripSomeWhiteSpaces(toStrip string) string {
 	return wrp.Replace(toStrip)

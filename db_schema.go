@@ -7,7 +7,8 @@ CREATE TABLE events (
 	id INTEGER PRIMARY KEY, 
 	title TEXT, 
 	date DATETIME, 
-	url TEXT
+	url TEXT,
+	venue TEXT
 );
 CREATE UNIQUE INDEX events_uq_title_date ON events(title, date);
 `

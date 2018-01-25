@@ -5,10 +5,8 @@ import (
 	"net/http"
 
 	"github.com/bjorm/wasgeit"
-	"github.com/op/go-logging"
+	log "github.com/sirupsen/logrus"
 )
-
-var log = logging.MustGetLogger("wasgeit")
 
 func main() {
 	resetDb := flag.Bool("setup-db", false, "Whether to create DB tables")
@@ -34,7 +32,7 @@ func main() {
 		log.Info(cr.Venue().Name)
 
 		doc, err := cr.Get()
-		events, crawlErrors := cr.Crawl(doc)
+		newEvents, crawlErrors := cr.Crawl(doc)
 
 		if err != nil {
 			log.Infof("Getting document for %q failed: %s", cr.Venue().Name, err)
@@ -42,8 +40,10 @@ func main() {
 		}
 
 		var storeErrors []error
+		existingEvents, _ := store.FindEvents(cr.Venue())
+		cs := wasgeit.DedupeAndTrackChanges(existingEvents, newEvents, cr.Venue())
 
-		for _, event := range events {
+		for _, event := range cs.New {
 			storeErr := store.SaveEvent(event)
 
 			if storeErr != nil {
@@ -53,12 +53,15 @@ func main() {
 
 		log.Infof("Crawl errors: %s", crawlErrors)
 		log.Infof("Store errors: %s", storeErrors)
-		log.Infof("Crawled and stored %d events successfully", len(events)-len(storeErrors))
+		log.Infof("Updates: %+v", cs.Updates)
+		log.Infof("New events stored: %d", len(cs.New)-len(storeErrors))
 	}
 
 	http.Handle("/events", wasgeit.NewServer(&store))
+
 	log.Info("Serving..")
 	err := http.ListenAndServe(":8080", nil)
+
 	if err != nil {
 		panic(err)
 	}

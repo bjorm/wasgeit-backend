@@ -12,7 +12,7 @@ var dateTimeRe = regexp.MustCompile(`(\d{1,2}.\d{1,2} \d{4}) - Doors: (\d{2}:\d{
 var timeRe = regexp.MustCompile(`\d{2}:\d{2}`)
 
 var kairoCrawler = HTMLCrawler{
-	venue:         Venue{ID: 1, Name: "Cafe Kairo", ShortName: "kairo", URL: "http://www.cafe-kairo.ch/kultur"},
+	venue:         GetVenueOrPanic("kairo"),
 	EventSelector: "article[id]",
 	TimeFormat:    "02.01.200615:04",
 	GetDateTimeString: func(eventSelection *goquery.Selection) string {
@@ -29,21 +29,24 @@ var kairoCrawler = HTMLCrawler{
 	}}
 
 var dachstockCrawler = HTMLCrawler{
-	venue:         Venue{ID: 2, Name: "Dachstock", ShortName: "dachstock", URL: "http://www.dachstock.ch"},
-	EventSelector: ".em-eventlist-event",
+	venue:         GetVenueOrPanic("dachstock"),
+	EventSelector: ".event.event-list",
 	TimeFormat:    "2.1 200615:04",
 	GetDateTimeString: func(eventSelection *goquery.Selection) string {
-		rawDateTimeString := eventSelection.Find(".em-eventlist-date").Text()
+		rawDateTimeString := eventSelection.Find(".event-date").Text()
 		captures := dateTimeRe.FindStringSubmatch(rawDateTimeString)
 		return captures[1] + captures[2]
 	},
 	TitleSelector: "h3",
-	LinkBuilder: func(crawler *HTMLCrawler, _ *goquery.Selection) string {
+	LinkBuilder: func(crawler *HTMLCrawler, eventSelection *goquery.Selection) string {
+		if href, exists := eventSelection.Attr("data-url"); exists {
+			return href
+		}
 		return crawler.venue.URL
 	}}
 
 var turnhalleCrawler = HTMLCrawler{
-	venue:         Venue{ID: 2, Name: "Turnhalle", ShortName: "turnhalle", URL: "http://www.turnhalle.ch"},
+	venue:         GetVenueOrPanic("turnhalle"),
 	EventSelector: ".event",
 	TimeFormat:    "02. 01. 0615:04",
 	GetDateTimeString: func(eventSelection *goquery.Selection) string {
@@ -65,7 +68,7 @@ var turnhalleCrawler = HTMLCrawler{
 	}}
 
 var brasserieLorraineCrawler = HTMLCrawler{
-	venue:         Venue{ID: 2, Name: "Brasserie Lorraine", ShortName: "brasserie-lorraine", URL: "http://brasserie-lorraine.ch/?post_type=tribe_events"},
+	venue:         GetVenueOrPanic("brasserie-lorraine"),
 	EventSelector: ".type-tribe_events",
 	TimeFormat:    "January 2",
 	GetDateTimeString: func(eventSelection *goquery.Selection) string {
@@ -82,7 +85,7 @@ var brasserieLorraineCrawler = HTMLCrawler{
 	}}
 
 var kofmehlCrawler = HTMLCrawler{
-	venue:         Venue{ID: 2, Name: "Kofmehl", ShortName: "kofmehl", URL: "http://www.kofmehl.net"},
+	venue:         GetVenueOrPanic("kofmehl"),
 	EventSelector: ".events__element",
 	TimeFormat:    "02.01",
 	GetDateTimeString: func(eventSelection *goquery.Selection) string {
@@ -99,7 +102,7 @@ var kofmehlCrawler = HTMLCrawler{
 	}}
 
 var kiffCrawler = HTMLCrawler{
-	venue:         Venue{ID: 2, Name: "Kiff", ShortName: "kiff", URL: "http://www.kiff.ch"},
+	venue:         GetVenueOrPanic("kiff"),
 	EventSelector: ".programm-grid a:not(.teaserlink)",
 	TimeFormat:    "2 Jan",
 	GetDateTimeString: func(eventSelection *goquery.Selection) string {
@@ -114,7 +117,7 @@ var kiffCrawler = HTMLCrawler{
 	}}
 
 var coqDorCrawler = HTMLCrawler{
-	venue:         Venue{ID: 2, Name: "Coq d'Or", ShortName: "coq-d-or", URL: "http://www.coq-d-or.ch/"},
+	venue:         GetVenueOrPanic("coq-d-or"),
 	EventSelector: "#main table:not(.shows)",
 	TimeFormat:    "02.01.0615:04",
 	GetDateTimeString: func(eventSelection *goquery.Selection) string {
@@ -133,7 +136,7 @@ var coqDorCrawler = HTMLCrawler{
 	}}
 
 var iscCrawler = HTMLCrawler{
-	venue:         Venue{ID: 2, Name: "ISC", ShortName: "isc", URL: "http://www.isc-club.ch/"},
+	venue:         GetVenueOrPanic("isc"),
 	EventSelector: ".page_programm a.event_preview",
 	TimeFormat:    "02.01.",
 	GetDateTimeString: func(eventSelection *goquery.Selection) string {
@@ -148,7 +151,7 @@ var iscCrawler = HTMLCrawler{
 	}}
 
 var mahoganyHallCrawler = HTMLCrawler{
-	venue:         Venue{ID: 2, Name: "Mahogany Hall", ShortName: "mahogany-hall", URL: "https://www.mahogany.ch/konzerte"},
+	venue:         GetVenueOrPanic("mahogany-hall"),
 	EventSelector: ".view-konzerte .views-row",
 	TimeFormat:    "02. January 2006|15.04",
 	GetDateTimeString: func(eventSelection *goquery.Selection) string {
@@ -170,7 +173,7 @@ var mahoganyHallCrawler = HTMLCrawler{
 	}}
 
 var heitereFahneCrawler = HTMLCrawler{
-	venue:         Venue{ID: 2, Name: "Heitere Fahne", ShortName: "heitere-fahne", URL: "http://www.dieheiterefahne.ch/de/hauptnavigation/start/programm-31.html"},
+	venue:         GetVenueOrPanic("heitere-fahne"),
 	EventSelector: ".events .event",
 	TimeFormat:    "02.01.200615:04",
 	GetDateTimeString: func(eventSelection *goquery.Selection) string {
@@ -189,7 +192,7 @@ var heitereFahneCrawler = HTMLCrawler{
 	}}
 
 var onoCrawler = HTMLCrawler{
-	venue:         Venue{ID: 2, Name: "ONO", ShortName: "ono", URL: "http://www.onobern.ch/programm-bersicht"},
+	venue:         GetVenueOrPanic("ono"),
 	EventSelector: ".EventItem",
 	TimeFormat:    "02.01.0615:04",
 	GetDateTimeString: func(eventSelection *goquery.Selection) string {
@@ -208,7 +211,7 @@ var onoCrawler = HTMLCrawler{
 	}}
 
 var martaCrawler = HTMLCrawler{
-	venue:         Venue{ID: 2, Name: "Cafe Marta", ShortName: "marta", URL: "http://www.cafemarta.ch/musik"},
+	venue:         GetVenueOrPanic("marta"),
 	EventSelector: "table.music tbody tr",
 	TimeFormat:    "02.01.200615:04",
 	GetDateTimeString: func(eventSelection *goquery.Selection) string {
@@ -226,7 +229,7 @@ var martaCrawler = HTMLCrawler{
 	}}
 
 var bierhuebeliCrawler = HTMLCrawler{
-	venue:         Venue{ID: 2, Name: "Bierhuebeli", ShortName: "bierhuebeli", URL: "http://www.bierhuebeli.ch/veranstaltungen/"},
+	venue:         GetVenueOrPanic("bierhuebeli"),
 	EventSelector: "ul.bh-event-list.all-events li",
 	TimeFormat:    "02.01.06",
 	GetDateTimeString: func(eventSelection *goquery.Selection) string {
@@ -242,7 +245,7 @@ var bierhuebeliCrawler = HTMLCrawler{
 	}}
 
 var dampfzentraleCrawler = HTMLCrawler{
-	venue:         Venue{ID: 2, Name: "Dampfzentrale", ShortName: "dampfzentrale", URL: "http://dampfzentrale.ch/programm/"},
+	venue:         GetVenueOrPanic("dampfzentrale"),
 	EventSelector: "article .agenda-container",
 	TimeFormat:    "2.1.15:04",
 	GetDateTimeString: func(eventSelection *goquery.Selection) string {

@@ -26,16 +26,35 @@
   version = "v1.4.0"
 
 [[projects]]
-  name = "github.com/op/go-logging"
+  name = "github.com/sirupsen/logrus"
   packages = ["."]
-  revision = "b2cb9fa56473e98db8caba80237377e83fe44db5"
-  version = "v1"
+  revision = "d682213848ed68c0a260ca37d6dd5ace8423f5ba"
+  version = "v1.0.4"
+
+[[projects]]
+  branch = "master"
+  name = "golang.org/x/crypto"
+  packages = ["ssh/terminal"]
+  revision = "13931e22f9e72ea58bb73048bc752b48c6d4d4ac"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/net"
-  packages = ["context","html","html/atom"]
+  packages = [
+    "context",
+    "html",
+    "html/atom"
+  ]
   revision = "42fe2e1c20de1054d3d30f82cc9fb5b41e2e3767"
+
+[[projects]]
+  branch = "master"
+  name = "golang.org/x/sys"
+  packages = [
+    "unix",
+    "windows"
+  ]
+  revision = "fff93fa7cd278d84afc205751523809c464168ab"
 
 [[projects]]
   name = "gopkg.in/fatih/set.v0"
@@ -46,6 +65,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "b6a331f73909a348dd1c186026290f89b9ba8f95e166aec0f31625deae0dc1e1"
+  inputs-digest = "49fe7774ee9da0e3b7b8dc48ae2a1aff16022b7fbbef0879ee6351b3f606bc31"
   solver-name = "gps-cdcl"
   solver-version = 1
