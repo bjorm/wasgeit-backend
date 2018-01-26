@@ -22,10 +22,7 @@ var kairoCrawler = HTMLCrawler{
 	},
 	TitleSelector: "h1",
 	LinkBuilder: func(crawler *HTMLCrawler, eventSelection *goquery.Selection) string {
-		if id, exists := eventSelection.Attr("id"); exists {
-			return fmt.Sprintf("%s#%s", crawler.venue.URL, id)
-		}
-		return crawler.venue.URL
+		return eventSelection.AttrOr("id", crawler.venue.URL)
 	}}
 
 var dachstockCrawler = HTMLCrawler{
@@ -39,10 +36,7 @@ var dachstockCrawler = HTMLCrawler{
 	},
 	TitleSelector: "h3",
 	LinkBuilder: func(crawler *HTMLCrawler, eventSelection *goquery.Selection) string {
-		if href, exists := eventSelection.Attr("data-url"); exists {
-			return href
-		}
-		return crawler.venue.URL
+		return eventSelection.AttrOr("data-url", crawler.venue.URL)
 	}}
 
 var turnhalleCrawler = HTMLCrawler{
@@ -61,10 +55,7 @@ var turnhalleCrawler = HTMLCrawler{
 	},
 	TitleSelector: "h2",
 	LinkBuilder: func(crawler *HTMLCrawler, eventSelection *goquery.Selection) string {
-		if href, exists := eventSelection.Find("a").Attr("href"); exists {
-			return fmt.Sprintf("%s%s", crawler.venue.URL, href)
-		}
-		return crawler.venue.URL
+		return eventSelection.Find("a").AttrOr("href", crawler.venue.URL)
 	}}
 
 var brasserieLorraineCrawler = HTMLCrawler{
@@ -78,10 +69,7 @@ var brasserieLorraineCrawler = HTMLCrawler{
 	},
 	TitleSelector: ".tribe-events-list-event-title",
 	LinkBuilder: func(crawler *HTMLCrawler, eventSelection *goquery.Selection) string {
-		if href, exists := eventSelection.Find("h2 > a").Attr("href"); exists {
-			return href
-		}
-		return crawler.venue.URL // TODO set as default in Crawl if this function returns ""
+		return eventSelection.Find("h2 > a").AttrOr("href", crawler.venue.URL)
 	}}
 
 var kofmehlCrawler = HTMLCrawler{
@@ -95,10 +83,7 @@ var kofmehlCrawler = HTMLCrawler{
 	},
 	TitleSelector: ".events__title",
 	LinkBuilder: func(crawler *HTMLCrawler, eventSelection *goquery.Selection) string {
-		if href, exists := eventSelection.Find("a.events__link").Attr("href"); exists {
-			return href
-		}
-		return crawler.venue.URL // TODO set as default in Crawl if this function returns ""
+		return eventSelection.Find("a.events__link").AttrOr("href", crawler.venue.URL)
 	}}
 
 var kiffCrawler = HTMLCrawler{
@@ -129,10 +114,7 @@ var coqDorCrawler = HTMLCrawler{
 	},
 	TitleSelector: "td.list_second h2",
 	LinkBuilder: func(crawler *HTMLCrawler, eventSelection *goquery.Selection) string {
-		if href, exists := eventSelection.Find("td.list_second h2 a").Attr("href"); exists {
-			return href
-		}
-		return crawler.venue.URL // TODO set as default in Crawl if this function returns ""
+		return eventSelection.Find("td.list_second h2 a").AttrOr("href", crawler.venue.URL)
 	}}
 
 var iscCrawler = HTMLCrawler{
@@ -144,10 +126,7 @@ var iscCrawler = HTMLCrawler{
 	},
 	TitleSelector: ".event_title_title",
 	LinkBuilder: func(crawler *HTMLCrawler, eventSelection *goquery.Selection) string {
-		if href, exists := eventSelection.Attr("href"); exists {
-			return href
-		}
-		return crawler.venue.URL // TODO set as default in Crawl if this function returns ""
+		return eventSelection.AttrOr("href", crawler.venue.URL)
 	}}
 
 var mahoganyHallCrawler = HTMLCrawler{
@@ -166,10 +145,8 @@ var mahoganyHallCrawler = HTMLCrawler{
 	},
 	TitleSelector: ".views-field-title h2",
 	LinkBuilder: func(crawler *HTMLCrawler, eventSelection *goquery.Selection) string {
-		if href, exists := eventSelection.Find(".views-field-title h2 a").Attr("href"); exists {
-			return fmt.Sprint(crawler.venue.URL, href)
-		}
-		return crawler.venue.URL // TODO set as default in Crawl if this function returns ""
+		href := eventSelection.Find(".views-field-title h2 a").AttrOr("href", "")
+		return fmt.Sprint(crawler.venue.URL, href)
 	}}
 
 var heitereFahneCrawler = HTMLCrawler{
@@ -184,11 +161,8 @@ var heitereFahneCrawler = HTMLCrawler{
 	},
 	TitleSelector: ".alpha.omega.text .inner h2 a",
 	LinkBuilder: func(crawler *HTMLCrawler, eventSelection *goquery.Selection) string {
-		if href, exists := eventSelection.Find(".alpha.omega.text .inner h2 a").Attr("href"); exists {
-			// TODO FIXME the extracted href starts with /. Simply concatenating with the venue URl will not work.
-			return fmt.Sprint(crawler.venue.URL, href)
-		}
-		return crawler.venue.URL // TODO set as default in Crawl if this function returns ""
+		href := eventSelection.Find(".alpha.omega.text .inner h2 a").AttrOr("href", "")
+		return fmt.Sprint(crawler.venue.URL, href)
 	}}
 
 var onoCrawler = HTMLCrawler{
@@ -204,10 +178,8 @@ var onoCrawler = HTMLCrawler{
 	},
 	TitleSelector: ".EventTextTitle",
 	LinkBuilder: func(crawler *HTMLCrawler, eventSelection *goquery.Selection) string {
-		if href, exists := eventSelection.Find(".EventImage a").Attr("href"); exists {
-			return fmt.Sprint(crawler.venue.URL, href)
-		}
-		return crawler.venue.URL // TODO set as default in Crawl if this function returns ""
+		href := eventSelection.Find(".EventImage a").AttrOr("href", "")
+		return fmt.Sprint(crawler.venue.URL, href)
 	}}
 
 var martaCrawler = HTMLCrawler{
@@ -222,10 +194,8 @@ var martaCrawler = HTMLCrawler{
 	},
 	TitleSelector: "td:nth-child(3) p",
 	LinkBuilder: func(crawler *HTMLCrawler, eventSelection *goquery.Selection) string {
-		if href, exists := eventSelection.Find(".EventImage a").Attr("href"); exists {
-			return fmt.Sprint(crawler.venue.URL, href)
-		}
-		return crawler.venue.URL // TODO set as default in Crawl if this function returns ""
+		href := eventSelection.Find(".EventImage a").AttrOr("href", "")
+		return fmt.Sprint(crawler.venue.URL, href)
 	}}
 
 var bierhuebeliCrawler = HTMLCrawler{
@@ -238,10 +208,7 @@ var bierhuebeliCrawler = HTMLCrawler{
 	},
 	TitleSelector: ".eventlink a",
 	LinkBuilder: func(crawler *HTMLCrawler, eventSelection *goquery.Selection) string {
-		if href, exists := eventSelection.Find(".eventlink a").Attr("href"); exists {
-			return href
-		}
-		return crawler.venue.URL // TODO set as default in Crawl if this function returns ""
+		return eventSelection.Find(".eventlink a").AttrOr("href", crawler.venue.URL)
 	}}
 
 var dampfzentraleCrawler = HTMLCrawler{
@@ -258,10 +225,8 @@ var dampfzentraleCrawler = HTMLCrawler{
 	},
 	TitleSelector: "h1.agenda-title",
 	LinkBuilder: func(crawler *HTMLCrawler, eventSelection *goquery.Selection) string {
-		if id, exists := eventSelection.Parent().Attr("id"); exists {
-			return fmt.Sprintf("%s#%s", crawler.venue.URL, id)
-		}
-		return crawler.venue.URL // TODO set as default in Crawl if this function returns ""
+		id := eventSelection.Parent().AttrOr("id", "")
+		return fmt.Sprintf("%s#%s", crawler.venue.URL, id)
 	}}
 
 var HTMLCrawlers = map[string]HTMLCrawler{
