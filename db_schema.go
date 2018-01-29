@@ -11,6 +11,21 @@ CREATE TABLE events (
 	venue TEXT
 );
 CREATE UNIQUE INDEX events_uq_title_date ON events(title, date);
+
+CREATE TABLE venues (
+	id	INTEGER PRIMARY KEY AUTOINCREMENT,
+	url	TEXT UNIQUE,
+	name	TEXT UNIQUE,
+	shortname	TEXT UNIQUE
+);
+
+CREATE TABLE logs (
+	id	INTEGER PRIMARY KEY AUTOINCREMENT,
+	datetime	TEXT,
+	store_errors	TEXT,
+	crawl_errors	TEXT,
+	updates	TEXT
+);
 `
 
 func (st *Store) CreateTables() error {

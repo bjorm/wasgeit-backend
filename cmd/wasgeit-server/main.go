@@ -13,8 +13,8 @@ func main() {
 	flag.Parse()
 
 	store := wasgeit.Store{}
-
 	dbErr := store.Connect()
+
 	if dbErr != nil {
 		panic(dbErr)
 	}
@@ -28,20 +28,30 @@ func main() {
 		}
 	}
 
-	for _, cr := range wasgeit.Crawlers {
-		log.Info(cr.Venue().Name)
+	wasgeit.RegisterAllHTMLCrawlers(&store)
 
-		doc, err := cr.Get()
-		newEvents, crawlErrors := cr.Crawl(doc)
+	for _, cr := range wasgeit.GetCrawlers() {
+		log.Info(cr.Name())
+
+		err := cr.Fetch()
 
 		if err != nil {
-			log.Infof("Getting document for %q failed: %s", cr.Venue().Name, err)
-			break
+			log.Infof("Fetching of %q failed: %s", cr.Name, err)
+			continue
 		}
 
+		newEvents, crawlErrors := cr.GetEvents()
+
+		if len(newEvents) == 0 {
+			log.Errorf("Crawler %q returned no new events", cr.Name())
+			continue
+		}
+
+		// TODO use channel and goroutines for this
+
+		existingEvents, _ := store.FindEvents(cr.Name())
+		cs := wasgeit.DedupeAndTrackChanges(existingEvents, newEvents, cr)
 		var storeErrors []error
-		existingEvents, _ := store.FindEvents(cr.Venue())
-		cs := wasgeit.DedupeAndTrackChanges(existingEvents, newEvents, cr.Venue())
 
 		for _, event := range cs.New {
 			storeErr := store.SaveEvent(event)

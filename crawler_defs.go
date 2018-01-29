@@ -2,6 +2,7 @@ package wasgeit
 
 import (
 	"fmt"
+	"net/url"
 	"regexp"
 	"strings"
 
@@ -11,8 +12,8 @@ import (
 var dateTimeRe = regexp.MustCompile(`(\d{1,2}.\d{1,2} \d{4}) - Doors: (\d{2}:\d{2})`)
 var timeRe = regexp.MustCompile(`\d{2}:\d{2}`)
 
-var kairoCrawler = HTMLCrawler{
-	venue:         GetVenueOrPanic("kairo"),
+var kairoConfig = HTMLConfig{
+	IsSameEvent:   hasSameUrl,
 	EventSelector: "article[id]",
 	TimeFormat:    "02.01.200615:04",
 	GetDateTimeString: func(eventSelection *goquery.Selection) string {
@@ -21,12 +22,12 @@ var kairoCrawler = HTMLCrawler{
 		return rawDateTimeString[3:13] + timeString
 	},
 	TitleSelector: "h1",
-	LinkBuilder: func(crawler *HTMLCrawler, eventSelection *goquery.Selection) string {
-		return eventSelection.AttrOr("id", crawler.venue.URL)
+	LinkBuilder: func(venue Venue, eventSelection *goquery.Selection) string {
+		return fmt.Sprint(venue.URL, "#", eventSelection.AttrOr("id", ""))
 	}}
 
-var dachstockCrawler = HTMLCrawler{
-	venue:         GetVenueOrPanic("dachstock"),
+var dachstockConfig = HTMLConfig{
+	IsSameEvent:   hasSameUrl,
 	EventSelector: ".event.event-list",
 	TimeFormat:    "2.1 200615:04",
 	GetDateTimeString: func(eventSelection *goquery.Selection) string {
@@ -35,12 +36,12 @@ var dachstockCrawler = HTMLCrawler{
 		return captures[1] + captures[2]
 	},
 	TitleSelector: "h3",
-	LinkBuilder: func(crawler *HTMLCrawler, eventSelection *goquery.Selection) string {
-		return eventSelection.AttrOr("data-url", crawler.venue.URL)
+	LinkBuilder: func(venue Venue, eventSelection *goquery.Selection) string {
+		return eventSelection.AttrOr("data-url", venue.URL)
 	}}
 
-var turnhalleCrawler = HTMLCrawler{
-	venue:         GetVenueOrPanic("turnhalle"),
+var turnhalleConfig = HTMLConfig{
+	IsSameEvent:   hasSameUrl,
 	EventSelector: ".event",
 	TimeFormat:    "02. 01. 0615:04",
 	GetDateTimeString: func(eventSelection *goquery.Selection) string {
@@ -54,12 +55,12 @@ var turnhalleCrawler = HTMLCrawler{
 		return dateString + timeString
 	},
 	TitleSelector: "h2",
-	LinkBuilder: func(crawler *HTMLCrawler, eventSelection *goquery.Selection) string {
-		return eventSelection.Find("a").AttrOr("href", crawler.venue.URL)
+	LinkBuilder: func(venue Venue, eventSelection *goquery.Selection) string {
+		return fmt.Sprint(venue.URL, eventSelection.Find("a").AttrOr("href", ""))
 	}}
 
-var brasserieLorraineCrawler = HTMLCrawler{
-	venue:         GetVenueOrPanic("brasserie-lorraine"),
+var brasserieLorraineConfig = HTMLConfig{
+	IsSameEvent:   hasSameUrl,
 	EventSelector: ".type-tribe_events",
 	TimeFormat:    "January 2",
 	GetDateTimeString: func(eventSelection *goquery.Selection) string {
@@ -68,12 +69,12 @@ var brasserieLorraineCrawler = HTMLCrawler{
 		return strings.TrimSpace(dateString)
 	},
 	TitleSelector: ".tribe-events-list-event-title",
-	LinkBuilder: func(crawler *HTMLCrawler, eventSelection *goquery.Selection) string {
-		return eventSelection.Find("h2 > a").AttrOr("href", crawler.venue.URL)
+	LinkBuilder: func(venue Venue, eventSelection *goquery.Selection) string {
+		return eventSelection.Find("h2 > a").AttrOr("href", venue.URL)
 	}}
 
-var kofmehlCrawler = HTMLCrawler{
-	venue:         GetVenueOrPanic("kofmehl"),
+var kofmehlConfig = HTMLConfig{
+	IsSameEvent:   hasSameUrl,
 	EventSelector: ".events__element",
 	TimeFormat:    "02.01",
 	GetDateTimeString: func(eventSelection *goquery.Selection) string {
@@ -82,27 +83,27 @@ var kofmehlCrawler = HTMLCrawler{
 		return dateString
 	},
 	TitleSelector: ".events__title",
-	LinkBuilder: func(crawler *HTMLCrawler, eventSelection *goquery.Selection) string {
-		return eventSelection.Find("a.events__link").AttrOr("href", crawler.venue.URL)
+	LinkBuilder: func(venue Venue, eventSelection *goquery.Selection) string {
+		return eventSelection.Find("a.events__link").AttrOr("href", venue.URL)
 	}}
 
-var kiffCrawler = HTMLCrawler{
-	venue:         GetVenueOrPanic("kiff"),
+var kiffConfig = HTMLConfig{
+	IsSameEvent:   hasSameUrl,
 	EventSelector: ".programm-grid a:not(.teaserlink)",
 	TimeFormat:    "2 Jan",
 	GetDateTimeString: func(eventSelection *goquery.Selection) string {
 		return eventSelection.Find(".event-date").Text()[3:]
 	},
 	TitleSelector: ".event-title-wrapper > h2",
-	LinkBuilder: func(crawler *HTMLCrawler, eventSelection *goquery.Selection) string {
+	LinkBuilder: func(venue Venue, eventSelection *goquery.Selection) string {
 		if href, exists := eventSelection.Attr("href"); exists {
-			return fmt.Sprintf("%s%s", crawler.venue.URL, href)
+			return fmt.Sprintf("%s%s", venue.URL, href)
 		}
-		return crawler.venue.URL // TODO set as default in Crawl if this function returns ""
+		return venue.URL // TODO set as default in Crawl if this function returns ""
 	}}
 
-var coqDorCrawler = HTMLCrawler{
-	venue:         GetVenueOrPanic("coq-d-or"),
+var coqDorConfig = HTMLConfig{
+	IsSameEvent:   hasSameUrl,
 	EventSelector: "#main table:not(.shows)",
 	TimeFormat:    "02.01.0615:04",
 	GetDateTimeString: func(eventSelection *goquery.Selection) string {
@@ -113,24 +114,24 @@ var coqDorCrawler = HTMLCrawler{
 		return dateString + timeString
 	},
 	TitleSelector: "td.list_second h2",
-	LinkBuilder: func(crawler *HTMLCrawler, eventSelection *goquery.Selection) string {
-		return eventSelection.Find("td.list_second h2 a").AttrOr("href", crawler.venue.URL)
+	LinkBuilder: func(venue Venue, eventSelection *goquery.Selection) string {
+		return eventSelection.Find("td.list_second h2 a").AttrOr("href", venue.URL)
 	}}
 
-var iscCrawler = HTMLCrawler{
-	venue:         GetVenueOrPanic("isc"),
+var iscConfig = HTMLConfig{
+	IsSameEvent:   hasSameUrl,
 	EventSelector: ".page_programm a.event_preview",
 	TimeFormat:    "02.01.",
 	GetDateTimeString: func(eventSelection *goquery.Selection) string {
 		return eventSelection.Find(".event_title_date").Text()
 	},
 	TitleSelector: ".event_title_title",
-	LinkBuilder: func(crawler *HTMLCrawler, eventSelection *goquery.Selection) string {
-		return eventSelection.AttrOr("href", crawler.venue.URL)
+	LinkBuilder: func(venue Venue, eventSelection *goquery.Selection) string {
+		return eventSelection.AttrOr("href", venue.URL)
 	}}
 
-var mahoganyHallCrawler = HTMLCrawler{
-	venue:         GetVenueOrPanic("mahogany-hall"),
+var mahoganyHallConfig = HTMLConfig{
+	IsSameEvent:   hasSameUrl,
 	EventSelector: ".view-konzerte .views-row",
 	TimeFormat:    "02. January 2006|15.04",
 	GetDateTimeString: func(eventSelection *goquery.Selection) string {
@@ -144,13 +145,13 @@ var mahoganyHallCrawler = HTMLCrawler{
 		return dateTimeString
 	},
 	TitleSelector: ".views-field-title h2",
-	LinkBuilder: func(crawler *HTMLCrawler, eventSelection *goquery.Selection) string {
+	LinkBuilder: func(venue Venue, eventSelection *goquery.Selection) string {
 		href := eventSelection.Find(".views-field-title h2 a").AttrOr("href", "")
-		return fmt.Sprint(crawler.venue.URL, href)
+		return fmt.Sprint(venue.URL, href)
 	}}
 
-var heitereFahneCrawler = HTMLCrawler{
-	venue:         GetVenueOrPanic("heitere-fahne"),
+var heitereFahneConfig = HTMLConfig{
+	IsSameEvent:   hasSameUrl,
 	EventSelector: ".events .event",
 	TimeFormat:    "02.01.200615:04",
 	GetDateTimeString: func(eventSelection *goquery.Selection) string {
@@ -160,13 +161,17 @@ var heitereFahneCrawler = HTMLCrawler{
 		return rawDateTimeString[3:13] + rawDateTimeString[33:38]
 	},
 	TitleSelector: ".alpha.omega.text .inner h2 a",
-	LinkBuilder: func(crawler *HTMLCrawler, eventSelection *goquery.Selection) string {
-		href := eventSelection.Find(".alpha.omega.text .inner h2 a").AttrOr("href", "")
-		return fmt.Sprint(crawler.venue.URL, href)
+	LinkBuilder: func(venue Venue, eventSelection *goquery.Selection) string {
+		if href, ok := eventSelection.Find(".alpha.omega.text .inner h2 a").Attr("href"); ok {
+			base, _ := url.Parse(venue.URL)
+			relative, _ := url.Parse(href)
+			return base.ResolveReference(relative).String()
+		}
+		return venue.URL
 	}}
 
-var onoCrawler = HTMLCrawler{
-	venue:         GetVenueOrPanic("ono"),
+var onoConfig = HTMLConfig{
+	IsSameEvent:   hasSameUrl,
 	EventSelector: ".EventItem",
 	TimeFormat:    "02.01.0615:04",
 	GetDateTimeString: func(eventSelection *goquery.Selection) string {
@@ -177,13 +182,15 @@ var onoCrawler = HTMLCrawler{
 		return dateString + timeString
 	},
 	TitleSelector: ".EventTextTitle",
-	LinkBuilder: func(crawler *HTMLCrawler, eventSelection *goquery.Selection) string {
+	LinkBuilder: func(venue Venue, eventSelection *goquery.Selection) string {
 		href := eventSelection.Find(".EventImage a").AttrOr("href", "")
-		return fmt.Sprint(crawler.venue.URL, href)
+		base, _ := url.Parse(venue.URL)
+		relative, _ := url.Parse(href)
+		return base.ResolveReference(relative).String()
 	}}
 
-var martaCrawler = HTMLCrawler{
-	venue:         GetVenueOrPanic("marta"),
+var martaConfig = HTMLConfig{
+	IsSameEvent:   hasSameTitleAndDate,
 	EventSelector: "table.music tbody tr",
 	TimeFormat:    "02.01.200615:04",
 	GetDateTimeString: func(eventSelection *goquery.Selection) string {
@@ -193,13 +200,13 @@ var martaCrawler = HTMLCrawler{
 		return dateString + timeString
 	},
 	TitleSelector: "td:nth-child(3) p",
-	LinkBuilder: func(crawler *HTMLCrawler, eventSelection *goquery.Selection) string {
+	LinkBuilder: func(venue Venue, eventSelection *goquery.Selection) string {
 		href := eventSelection.Find(".EventImage a").AttrOr("href", "")
-		return fmt.Sprint(crawler.venue.URL, href)
+		return fmt.Sprint(venue.URL, href)
 	}}
 
-var bierhuebeliCrawler = HTMLCrawler{
-	venue:         GetVenueOrPanic("bierhuebeli"),
+var bierhuebeliConfig = HTMLConfig{
+	IsSameEvent:   hasSameUrl,
 	EventSelector: "ul.bh-event-list.all-events li",
 	TimeFormat:    "02.01.06",
 	GetDateTimeString: func(eventSelection *goquery.Selection) string {
@@ -207,12 +214,12 @@ var bierhuebeliCrawler = HTMLCrawler{
 		return rawTimeString[8:16]
 	},
 	TitleSelector: ".eventlink a",
-	LinkBuilder: func(crawler *HTMLCrawler, eventSelection *goquery.Selection) string {
-		return eventSelection.Find(".eventlink a").AttrOr("href", crawler.venue.URL)
+	LinkBuilder: func(venue Venue, eventSelection *goquery.Selection) string {
+		return eventSelection.Find(".eventlink a").AttrOr("href", venue.URL)
 	}}
 
-var dampfzentraleCrawler = HTMLCrawler{
-	venue:         GetVenueOrPanic("dampfzentrale"),
+var dampfzentraleConfig = HTMLConfig{
+	IsSameEvent:   hasSameUrl,
 	EventSelector: "article .agenda-container",
 	TimeFormat:    "2.1.15:04",
 	GetDateTimeString: func(eventSelection *goquery.Selection) string {
@@ -224,48 +231,34 @@ var dampfzentraleCrawler = HTMLCrawler{
 		return dateString + timeString
 	},
 	TitleSelector: "h1.agenda-title",
-	LinkBuilder: func(crawler *HTMLCrawler, eventSelection *goquery.Selection) string {
+	LinkBuilder: func(venue Venue, eventSelection *goquery.Selection) string {
 		id := eventSelection.Parent().AttrOr("id", "")
-		return fmt.Sprintf("%s#%s", crawler.venue.URL, id)
+		return fmt.Sprintf("%s#%s", venue.URL, id)
 	}}
 
-var HTMLCrawlers = map[string]HTMLCrawler{
-	iscCrawler.venue.ShortName:               iscCrawler,
-	kiffCrawler.venue.ShortName:              kiffCrawler,
-	kofmehlCrawler.venue.ShortName:           kofmehlCrawler,
-	kairoCrawler.venue.ShortName:             kairoCrawler,
-	dachstockCrawler.venue.ShortName:         dachstockCrawler,
-	coqDorCrawler.venue.ShortName:            coqDorCrawler,
-	turnhalleCrawler.venue.ShortName:         turnhalleCrawler,
-	brasserieLorraineCrawler.venue.ShortName: brasserieLorraineCrawler,
-	mahoganyHallCrawler.venue.ShortName:      mahoganyHallCrawler,
-	heitereFahneCrawler.venue.ShortName:      heitereFahneCrawler,
-	onoCrawler.venue.ShortName:               onoCrawler,
-	martaCrawler.venue.ShortName:             martaCrawler,
-	bierhuebeliCrawler.venue.ShortName:       bierhuebeliCrawler,
-	dampfzentraleCrawler.venue.ShortName:     dampfzentraleCrawler}
-
-var Crawlers = []Crawler{
-	&iscCrawler,
-	&kiffCrawler,
-	&kofmehlCrawler,
-	&kairoCrawler,
-	&coqDorCrawler,
-	&dachstockCrawler,
-	&turnhalleCrawler,
-	&brasserieLorraineCrawler,
-	&mahoganyHallCrawler,
-	&heitereFahneCrawler,
-	&onoCrawler,
-	&martaCrawler,
-	&bierhuebeliCrawler,
-	&dampfzentraleCrawler}
-
 // http://wartsaal-kaffee.ch/veranstaltungen/
-// https://www.facebook.com/pg/CaffeBarSattler/events/t
 // http://www.cafete.ch/
 // http://www.schlachthaus.ch/spielplan/index.php
 // https://www.effinger.ch/events/
-// https://www.facebook.com/pg/loescherbern/events/?ref=page_internal
-// https://www.facebook.com/peterflamingobern/
-// roessli, sous-le-pont,
+// https://www.souslepont-roessli.ch
+
+func RegisterAllHTMLCrawlers(st *Store) {
+	registerHTMLCrawler("kairo", kairoConfig, st)
+	registerHTMLCrawler("dachstock", dachstockConfig, st)
+	registerHTMLCrawler("turnhalle", turnhalleConfig, st)
+	registerHTMLCrawler("brasserie-lorraine", brasserieLorraineConfig, st)
+	registerHTMLCrawler("kofmehl", kofmehlConfig, st)
+	registerHTMLCrawler("kiff", kiffConfig, st)
+	registerHTMLCrawler("coq-d-or", coqDorConfig, st)
+	registerHTMLCrawler("isc", iscConfig, st)
+	registerHTMLCrawler("mahogany-hall", mahoganyHallConfig, st)
+	registerHTMLCrawler("heitere-fahne", heitereFahneConfig, st)
+	registerHTMLCrawler("ono", onoConfig, st)
+	registerHTMLCrawler("marta", martaConfig, st)
+	registerHTMLCrawler("bierhuebeli", bierhuebeliConfig, st)
+	registerHTMLCrawler("dampfzentrale", dampfzentraleConfig, st)
+}
+
+func registerHTMLCrawler(shortName string, config HTMLConfig, st *Store) {
+	RegisterCrawler(shortName, &HTMLCrawler{config: config, venue: st.GetVenue(shortName)})
+}

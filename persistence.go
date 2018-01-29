@@ -33,8 +33,33 @@ func (st *Store) Close() error {
 	return nil
 }
 
-func (st *Store) FindEvents(venue Venue) ([]Event, error) {
-	rows, _ := st.db.Query("SELECT id, title, date, url FROM events where venue = ?", venue.ShortName)
+func (st *Store) FindVenue(shortName string) (Venue, error) {
+	row := st.db.QueryRow("SELECT id, name, shortname, url FROM venues WHERE shortname = ?", shortName)
+	var v Venue
+	err := row.Scan(&v.ID, &v.Name, &v.ShortName, &v.URL)
+
+	if err == sql.ErrNoRows {
+		return Venue{}, fmt.Errorf("Could not find venue %q", shortName)
+	} else if err != nil {
+		return Venue{}, fmt.Errorf("Error when querying venues: %q", err)
+	}
+	return v, nil
+}
+
+func (st *Store) GetVenue(shortName string) Venue {
+	venue, err := st.FindVenue(shortName)
+
+	if err != nil {
+		panic(err)
+	}
+	return venue
+}
+
+func (st *Store) FindEvents(crawlerName string) ([]Event, error) {
+	rows, err := st.db.Query("SELECT id, title, date, url FROM events WHERE venue = ?", crawlerName)
+	if err != nil {
+		return []Event{}, err
+	}
 	defer rows.Close()
 
 	return mapRowsToEvents(rows)
@@ -71,11 +96,6 @@ func (st *Store) GetEvents() ([]Event, error) {
 	}
 	defer rows.Close()
 
-	ct, _ := rows.ColumnTypes()
-	for _, t := range ct {
-		fmt.Printf("%v\n", t)
-	}
-
 	return mapRowsToEvents(rows)
 }
 
@@ -88,7 +108,6 @@ func mapRowsToEvents(rows *sql.Rows) ([]Event, error) {
 		err := rows.Scan(&ev.ID, &ev.Title, &ev.DateTime, &ev.URL)
 
 		if err != nil {
-			fmt.Println(err)
 			return nil, err
 		}
 		events = append(events, ev)

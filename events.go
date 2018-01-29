@@ -25,13 +25,13 @@ type ChangeSet struct {
 }
 
 // TODO query DB directly instead of loading all events?
-func DedupeAndTrackChanges(existingEvents []Event, newEvents []Event, venue Venue) ChangeSet {
+func DedupeAndTrackChanges(existingEvents []Event, newEvents []Event, cr Crawler) ChangeSet {
 	var cs ChangeSet
 	uniquenessVotes := 0
 
 	for _, newEv := range newEvents {
 		for _, existingEv := range existingEvents {
-			if venue.IsSame(newEv, existingEv) {
+			if cr.IsSame(newEv, existingEv) {
 				if hasDiff, update := diff(newEv, existingEv); hasDiff {
 					cs.Updates = append(cs.Updates, update)
 				}
