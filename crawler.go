@@ -22,7 +22,7 @@ type Crawler interface {
 func GetCrawler(name string) Crawler {
 	if cr, exists := crawlers[name]; exists {
 		return cr
-	} 
+	}
 	return nil
 }
 

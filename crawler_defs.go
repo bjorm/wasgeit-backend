@@ -12,7 +12,7 @@ import (
 var (
 	dateTimeRe = regexp.MustCompile(`(\d{1,2}.\d{1,2} \d{4}) - Doors: (\d{2}:\d{2})`)
 	timeRe     = regexp.MustCompile(`\d{2}:\d{2}`)
-	roessliRe = regexp.MustCompile(`\d{1,2}. \pL{3} \d{4} \d{2}:\d{2}`)
+	roessliRe  = regexp.MustCompile(`\d{1,2}. \pL{3} \d{4} \d{2}:\d{2}`)
 )
 
 var kairoConfig = HTMLConfig{

@@ -1,8 +1,8 @@
 package wasgeit
 
 import (
-	"io"
 	"fmt"
+	"io"
 	"strings"
 	"time"
 
