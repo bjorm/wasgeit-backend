@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/PuerkitoBio/goquery"
 	"github.com/bjorm/wasgeit"
 )
 
@@ -21,37 +20,43 @@ func main() {
 		panic("Please specifiy a valid crawler")
 	}
 
-	if cr, exists := wasgeit.HTMLCrawlers[*crName]; exists {
-		var f *os.File
-		filename := fmt.Sprintf("%s%s.html", tmpDataDir, cr.Venue().ShortName)
+	st := wasgeit.Store{}
+	st.Connect()
 
-		if _, err := os.Stat(filename); err != nil {
-			downloadSite(filename, &cr)
-		}
+	wasgeit.RegisterAllHTMLCrawlers(&st)
 
-		f, err := os.Open(filename)
-		panicOnError(err)
-		defer f.Close()
+	cr := wasgeit.GetCrawler(*crName).(*wasgeit.HTMLCrawler)
 
-		doc, err := goquery.NewDocumentFromReader(f)
-		panicOnError(err)
+	var f *os.File
+	filename := fmt.Sprintf("%s%s.html", tmpDataDir, cr.Name())
 
-		doc.Find(cr.EventSelector).Each(func(_ int, firstEv *goquery.Selection) {
-			dt := cr.GetDateTimeString(firstEv)
-			pdt, _ := cr.GetEventTime(firstEv)
-			fmt.Printf("time string: %q\n", dt)
-			fmt.Printf("parsed time: %q\n", pdt)
-			fmt.Printf("link: %q\n", cr.LinkBuilder(&cr, firstEv))
-			fmt.Printf("title: %q\n", firstEv.Find(cr.TitleSelector).Text())
-			fmt.Println()
-		})
-	} else {
-		panic("Crawler not found")
+	if _, err := os.Stat(filename); err != nil {
+		downloadSite(filename, cr)
+	}
+
+	f, err := os.Open(filename)
+	panicOnError(err)
+	defer f.Close()
+
+	err = cr.LoadFrom(f)
+	panicOnError(err)
+
+	events, errors := cr.GetEvents()
+
+	for _, ev := range events {
+		fmt.Printf("title: %q\n", ev.Title)
+		fmt.Printf("parsed time: %q\n", ev.DateTime)
+		fmt.Printf("link: %q\n", ev.URL)
+		fmt.Println()
+	}
+
+	for _, err := range errors {
+		fmt.Println(err)
 	}
 }
 
 func downloadSite(filename string, cr *wasgeit.HTMLCrawler) {
-	resp, err := http.Get(cr.Venue().URL)
+	resp, err := http.Get(cr.URL())
 	panicOnError(err)
 
 	body, err := ioutil.ReadAll(resp.Body)
