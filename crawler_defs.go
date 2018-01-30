@@ -9,8 +9,11 @@ import (
 	"github.com/PuerkitoBio/goquery"
 )
 
-var dateTimeRe = regexp.MustCompile(`(\d{1,2}.\d{1,2} \d{4}) - Doors: (\d{2}:\d{2})`)
-var timeRe = regexp.MustCompile(`\d{2}:\d{2}`)
+var (
+	dateTimeRe = regexp.MustCompile(`(\d{1,2}.\d{1,2} \d{4}) - Doors: (\d{2}:\d{2})`)
+	timeRe     = regexp.MustCompile(`\d{2}:\d{2}`)
+	roessliRe = regexp.MustCompile(`\d{1,2}. \pL{3} \d{4} \d{2}:\d{2}`)
+)
 
 var kairoConfig = HTMLConfig{
 	IsSameEvent:   hasSameUrl,
@@ -236,11 +239,40 @@ var dampfzentraleConfig = HTMLConfig{
 		return fmt.Sprintf("%s#%s", venue.URL, id)
 	}}
 
+var roessliConfig = HTMLConfig{
+	IsSameEvent:   hasSameUrl,
+	EventSelector: ".rossli-events .event",
+	TimeFormat:    "2. Jan 2006 15:04",
+	GetDateTimeString: func(eventSelection *goquery.Selection) string {
+		dt := eventSelection.Find("time.event-date").AttrOr("datetime", "")
+		replaced := strings.Replace(dt, "Mrz", "Mär", -1)
+		return roessliRe.FindString(replaced)
+		// return dt[4:21]
+	},
+	TitleSelector: "h2",
+	LinkBuilder: func(venue Venue, eventSelection *goquery.Selection) string {
+		return eventSelection.Find("a").AttrOr("href", venue.URL)
+	}}
+
+var souslepontConfig = HTMLConfig{
+	IsSameEvent:   hasSameUrl,
+	EventSelector: ".sous-le-pont-programm .event",
+	TimeFormat:    "2. Jan 2006 15:04",
+	GetDateTimeString: func(eventSelection *goquery.Selection) string {
+		dt := eventSelection.Find("time.event-date").AttrOr("datetime", "")
+		replaced := strings.Replace(dt, "Mrz", "Mär", -1)
+		return roessliRe.FindString(replaced)
+		// return dt[4:21]
+	},
+	TitleSelector: "h2",
+	LinkBuilder: func(venue Venue, eventSelection *goquery.Selection) string {
+		return eventSelection.Find("a").AttrOr("href", venue.URL)
+	}}
+
 // http://wartsaal-kaffee.ch/veranstaltungen/
 // http://www.cafete.ch/
 // http://www.schlachthaus.ch/spielplan/index.php
 // https://www.effinger.ch/events/
-// https://www.souslepont-roessli.ch
 
 func RegisterAllHTMLCrawlers(st *Store) {
 	registerHTMLCrawler("kairo", kairoConfig, st)
@@ -257,6 +289,8 @@ func RegisterAllHTMLCrawlers(st *Store) {
 	registerHTMLCrawler("marta", martaConfig, st)
 	registerHTMLCrawler("bierhuebeli", bierhuebeliConfig, st)
 	registerHTMLCrawler("dampfzentrale", dampfzentraleConfig, st)
+	registerHTMLCrawler("roessli", roessliConfig, st)
+	registerHTMLCrawler("sous-le-pont", souslepontConfig, st)
 }
 
 func registerHTMLCrawler(shortName string, config HTMLConfig, st *Store) {
