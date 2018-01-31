@@ -149,8 +149,12 @@ var mahoganyHallConfig = HTMLConfig{
 	},
 	TitleSelector: ".views-field-title h2",
 	LinkBuilder: func(venue Venue, eventSelection *goquery.Selection) string {
-		href := eventSelection.Find(".views-field-title h2 a").AttrOr("href", "")
-		return fmt.Sprint(venue.URL, href)
+		if href, exists := eventSelection.Find(".views-field-title h2 a").Attr("href"); exists {
+			base, _ := url.Parse(venue.URL)
+			relative, _ := url.Parse(href)
+			return base.ResolveReference(relative).String()
+		}
+		return venue.URL
 	}}
 
 var heitereFahneConfig = HTMLConfig{
