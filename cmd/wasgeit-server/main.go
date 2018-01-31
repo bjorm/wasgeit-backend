@@ -12,7 +12,7 @@ func main() {
 	resetDb := flag.Bool("setup-db", false, "Whether to create DB tables")
 	flag.Parse()
 
-	store := wasgeit.Store{}
+	store := &wasgeit.Store{}
 	dbErr := store.Connect()
 
 	if dbErr != nil {
@@ -28,7 +28,7 @@ func main() {
 		}
 	}
 
-	wasgeit.RegisterAllHTMLCrawlers(&store)
+	wasgeit.RegisterAllHTMLCrawlers(store)
 
 	for _, cr := range wasgeit.GetCrawlers() {
 		log.Info(cr.Name())
@@ -49,7 +49,8 @@ func main() {
 
 		// TODO use channel and goroutines for this
 
-		existingEvents, _ := store.FindEvents(cr.Name())
+		existingEvents := store.FindEvents(cr.Name())
+
 		cs := wasgeit.DedupeAndTrackChanges(existingEvents, newEvents, cr)
 		var storeErrors []error
 
@@ -67,7 +68,7 @@ func main() {
 		log.Infof("New events stored: %d", len(cs.New)-len(storeErrors))
 	}
 
-	http.Handle("/events", wasgeit.NewServer(&store))
+	http.HandleFunc("/agenda", wasgeit.NewServer(store).ServeAgenda)
 
 	log.Info("Serving..")
 	err := http.ListenAndServe(":8080", nil)

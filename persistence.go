@@ -55,10 +55,22 @@ func (st *Store) GetVenue(shortName string) Venue {
 	return venue
 }
 
-func (st *Store) FindEvents(crawlerName string) ([]Event, error) {
-	rows, err := st.db.Query("SELECT id, title, date, url FROM events WHERE venue = ?", crawlerName)
+func (st *Store) FindEvents(crawlerName string) []Event {
+	rows, err := st.db.Query(`SELECT 
+		events.id, 
+		events.title, 
+		events.date, 
+		events.url, 
+		venues.id,
+		venues.name,
+		venues.shortname,
+		venues.url
+		FROM events 
+		JOIN venues ON venues.shortname = events.venue
+		WHERE venue = ?`,
+		crawlerName)
 	if err != nil {
-		return []Event{}, err
+		panic(err)
 	}
 	defer rows.Close()
 
@@ -89,29 +101,40 @@ func (st *Store) SaveEvent(ev Event) error {
 	return nil
 }
 
-func (st *Store) GetEvents() ([]Event, error) {
-	rows, err := st.db.Query("SELECT id, title, date, url FROM events where date > DATE('now', '-1 day')")
+func (st *Store) GetEventsYetToHappen() []Event {
+	rows, err := st.db.Query(`SELECT 
+								events.id, 
+								events.title, 
+								events.date, 
+								events.url, 
+								venues.id,
+								venues.name,
+								venues.shortname,
+								venues.url
+								FROM events 
+								JOIN venues ON venues.shortname = events.venue 
+								WHERE date > DATE('now', '-1 day')
+								`)
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
 	defer rows.Close()
 
 	return mapRowsToEvents(rows)
 }
 
-func mapRowsToEvents(rows *sql.Rows) ([]Event, error) {
+func mapRowsToEvents(rows *sql.Rows) []Event {
 	var events []Event
 
 	for rows.Next() {
 		var ev Event
-		// TODO map venues
-		err := rows.Scan(&ev.ID, &ev.Title, &ev.DateTime, &ev.URL)
+		err := rows.Scan(&ev.ID, &ev.Title, &ev.DateTime, &ev.URL, &ev.Venue.ID, &ev.Venue.Name, &ev.Venue.ShortName, &ev.Venue.URL)
 
 		if err != nil {
-			return nil, err
+			panic(err)
 		}
 		events = append(events, ev)
 	}
 
-	return events, nil
+	return events
 }

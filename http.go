@@ -2,6 +2,7 @@ package wasgeit
 
 import (
 	"encoding/json"
+	"time"
 	"fmt"
 	"net/http"
 )
@@ -10,9 +11,26 @@ type Server struct {
 	st *Store
 }
 
-func (srv *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	events, _ := srv.st.GetEvents()
-	b, err := json.Marshal(events)
+func (srv *Server) ServeAgenda(w http.ResponseWriter, r *http.Request) {
+	events := srv.st.GetEventsYetToHappen()
+	agenda := make(map[string][]interface{})
+
+	now := time.Now()
+	todayMorning := time.Date(now.Year(), now.Month(), now.Day(), 0, 0 ,0, 0, location)
+
+	for _, ev := range events {
+		if  ev.DateTime.After(todayMorning) {
+			date := ev.DateTime.Format("2006-01-02")
+			// oh yeah
+			ev2 := struct {
+				Title string `json:"title"`
+				URL string `json:"url"`
+				Venue Venue `json:"venue"`
+			}{ Title: ev.Title, URL: ev.URL, Venue: ev.Venue }
+			agenda[date] = append(agenda[date], ev2)
+		}
+	}
+	b, err := json.Marshal(agenda)
 	if err != nil {
 		fmt.Println(err)
 	}
