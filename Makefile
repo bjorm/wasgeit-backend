@@ -1,8 +1,7 @@
 .PHONY: server
 server:
-	cd cmd/wasgeit-server && go install 
+	go install -i github.com/bjorm/wasgeit/cmd/wasgeit-server
 
 .PHONY: chelper
-chelper: 
-	cd cmd/crawlerhelper && go install
-
+chelper:
+	go install -i github.com/bjorm/wasgeit/cmd/crawler-helper

@@ -3,7 +3,6 @@ package wasgeit
 import (
 	"encoding/json"
 	"time"
-	"fmt"
 	"net/http"
 )
 
@@ -32,7 +31,7 @@ func (srv *Server) ServeAgenda(w http.ResponseWriter, r *http.Request) {
 	}
 	b, err := json.Marshal(agenda)
 	if err != nil {
-		fmt.Println(err)
+		panic(err)
 	}
 	w.Write(b)
 }
