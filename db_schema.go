@@ -11,7 +11,7 @@ CREATE TABLE events (
 	venue TEXT
 );
 CREATE UNIQUE INDEX events_uq_title_date ON events(title, date);
-CREATE TRIGGER timestamp_created AFTER INSERT ON events BEGIN UPDATE events SET created = DATETIME('now');  END;
+CREATE TRIGGER timestamp_created AFTER INSERT ON events BEGIN UPDATE events SET created = DATETIME('now') WHERE id = NEW.id; END;
 
 CREATE TABLE venues (
 	id	INTEGER PRIMARY KEY AUTOINCREMENT,
