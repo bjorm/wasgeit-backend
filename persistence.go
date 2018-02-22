@@ -61,6 +61,7 @@ func (st *Store) FindEvents(crawlerName string) []Event {
 		events.title, 
 		events.date, 
 		events.url, 
+		events.created,
 		venues.id,
 		venues.name,
 		venues.shortname,
@@ -107,14 +108,36 @@ func (st *Store) GetEventsYetToHappen() []Event {
 								events.title, 
 								events.date, 
 								events.url, 
+								events.created,
 								venues.id,
 								venues.name,
 								venues.shortname,
 								venues.url
 								FROM events 
 								JOIN venues ON venues.shortname = events.venue 
-								WHERE date > DATE('now', '-1 day')
-								`)
+								WHERE date(date) > DATE('now', '-1 day')`)
+	if err != nil {
+		panic(err)
+	}
+	defer rows.Close()
+
+	return mapRowsToEvents(rows)
+}
+
+func (st *Store) GetEventsAddedDuringLastWeek() []Event {
+	rows, err := st.db.Query(`SELECT 
+								events.id, 
+								events.title, 
+								events.date, 
+								events.url,
+								events.created, 
+								venues.id,
+								venues.name,
+								venues.shortname,
+								venues.url
+								FROM events 
+								JOIN venues ON venues.shortname = events.venue
+								WHERE date(created) > DATE('now', '-7 day') ORDER BY created DESC`)
 	if err != nil {
 		panic(err)
 	}
@@ -128,7 +151,7 @@ func mapRowsToEvents(rows *sql.Rows) []Event {
 
 	for rows.Next() {
 		var ev Event
-		err := rows.Scan(&ev.ID, &ev.Title, &ev.DateTime, &ev.URL, &ev.Venue.ID, &ev.Venue.Name, &ev.Venue.ShortName, &ev.Venue.URL)
+		err := rows.Scan(&ev.ID, &ev.Title, &ev.DateTime, &ev.URL, &ev.Created, &ev.Venue.ID, &ev.Venue.Name, &ev.Venue.ShortName, &ev.Venue.URL)
 
 		if err != nil {
 			panic(err)

@@ -9,6 +9,7 @@ type Event struct {
 	ID       int64
 	Title    string
 	DateTime time.Time
+	Created  time.Time
 	URL      string
 	Venue    Venue
 }
@@ -60,7 +61,7 @@ func diff(newEv Event, existingEv Event) (bool, Update) {
 	if !sameTime {
 		update.ChangedFields = append(update.ChangedFields, "time")
 	}
-	if !sameTime {
+	if !sameTitle {
 		update.ChangedFields = append(update.ChangedFields, "title")
 	}
 

@@ -62,13 +62,17 @@ func main() {
 			}
 		}
 
+		// TODO do updates
+
 		log.Infof("Crawl errors: %s", crawlErrors)
 		log.Infof("Store errors: %s", storeErrors)
 		log.Infof("Updates: %+v", cs.Updates)
 		log.Infof("New events stored: %d", len(cs.New)-len(storeErrors))
 	}
 
-	http.HandleFunc("/agenda", wasgeit.NewServer(store).ServeAgenda)
+	server := wasgeit.NewServer(store)
+	http.HandleFunc("/agenda", server.ServeAgenda)
+	http.HandleFunc("/news", server.ServeNews)
 
 	log.Info("Serving..")
 	err := http.ListenAndServe(":8080", nil)

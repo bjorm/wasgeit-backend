@@ -5,13 +5,13 @@ import "fmt"
 var schema = `
 CREATE TABLE events (
 	id INTEGER PRIMARY KEY, 
-	title TEXT, 
-	date DATETIME, 
-	url TEXT,
-	venue TEXT
+	title TEXT NOT NULL, 
+	date DATETIME NOT NULL,
+	url TEXT NOT NULL,
+	venue TEXT NOT NULL,
+	created DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 CREATE UNIQUE INDEX events_uq_title_date ON events(title, date);
-CREATE TRIGGER timestamp_created AFTER INSERT ON events BEGIN UPDATE events SET created = DATETIME('now') WHERE id = NEW.id; END;
 
 CREATE TABLE venues (
 	id	INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -21,11 +21,11 @@ CREATE TABLE venues (
 );
 
 CREATE TABLE logs (
-	id	INTEGER PRIMARY KEY AUTOINCREMENT,
-	datetime	TEXT,
-	store_errors	TEXT,
-	crawl_errors	TEXT,
-	updates	TEXT
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	datetime  DATETIME,
+	store_errors  TEXT,
+	crawl_errors TEXT,
+	updates	   	TEXT
 );
 `
 
