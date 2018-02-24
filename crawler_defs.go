@@ -100,9 +100,11 @@ var kiffConfig = HTMLConfig{
 	TitleSelector: ".event-title-wrapper > h2",
 	LinkBuilder: func(venue Venue, eventSelection *goquery.Selection) string {
 		if href, exists := eventSelection.Attr("href"); exists {
-			return fmt.Sprintf("%s%s", venue.URL, href)
+			base, _ := url.Parse(venue.URL)
+			relative, _ := url.Parse(href)
+			return base.ResolveReference(relative).String()
 		}
-		return venue.URL // TODO set as default in Crawl if this function returns ""
+		return venue.URL
 	}}
 
 var coqDorConfig = HTMLConfig{
@@ -277,6 +279,11 @@ var souslepontConfig = HTMLConfig{
 // http://www.cafete.ch/
 // http://www.schlachthaus.ch/spielplan/index.php
 // https://www.effinger.ch/events/
+// http://mokka.ch/programm/
+// https://www.lesamis.ch/events2/
+// http://www.muehlehunziken.ch
+// http://www.gaskessel.ch
+// http://dynamo.ch/veranstaltungen?field_event_type_tid=1&field_event_zeitraum_value_1[value][month]=1&field_event_zeitraum_value_1[value][year]=2018
 
 func RegisterAllHTMLCrawlers(st *Store) {
 	registerHTMLCrawler("kairo", kairoConfig, st)
