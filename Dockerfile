@@ -10,5 +10,6 @@ RUN dep ensure -vendor-only
 RUN make server
 
 WORKDIR /wasgeit
+USER nobody
 
 CMD ["wasgeit-server"]
