@@ -11,14 +11,15 @@ type Server struct {
 }
 
 type JsonEvent struct {
-	Title   string    `json:"title"`
-	URL     string    `json:"url"`
-	Venue   Venue     `json:"venue"`
-	Created time.Time `json:"created"`
+	Title    string    `json:"title"`
+	URL      string    `json:"url"`
+	DateTime time.Time `json:"datetime"`
+	Venue    Venue     `json:"venue"`
+	Created  time.Time `json:"created"`
 }
 
 func from(ev Event) JsonEvent {
-	return JsonEvent{Title: ev.Title, URL: ev.URL, Venue: ev.Venue, Created: ev.Created}
+	return JsonEvent{Title: ev.Title, URL: ev.URL, DateTime: ev.DateTime, Venue: ev.Venue, Created: ev.Created}
 }
 
 func (srv *Server) ServeAgenda(w http.ResponseWriter, r *http.Request) {
