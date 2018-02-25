@@ -4,4 +4,4 @@ server:
 
 .PHONY: chelper
 chelper:
-	go install -i github.com/bjorm/wasgeit/cmd/crawler-helper
+	go install -i github.com/bjorm/wasgeit/cmd/crawlerhelper

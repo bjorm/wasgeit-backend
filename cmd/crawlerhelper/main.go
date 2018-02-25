@@ -43,6 +43,10 @@ func main() {
 
 	events, errors := cr.GetEvents()
 
+	if len(events) == 0 {
+		fmt.Println("No events returned.")
+	}
+
 	for _, ev := range events {
 		fmt.Printf("title: %q\n", ev.Title)
 		fmt.Printf("parsed time: %q\n", ev.DateTime)
