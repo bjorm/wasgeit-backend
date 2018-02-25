@@ -268,21 +268,56 @@ var souslepontConfig = HTMLConfig{
 		dt := eventSelection.Find("time.event-date").AttrOr("datetime", "")
 		replaced := strings.Replace(dt, "Mrz", "Mär", -1)
 		return roessliRe.FindString(replaced)
-		// return dt[4:21]
 	},
 	TitleSelector: "h2",
 	LinkBuilder: func(venue Venue, eventSelection *goquery.Selection) string {
 		return eventSelection.Find("a").AttrOr("href", venue.URL)
 	}}
 
+var lesAmisConfig = HTMLConfig{
+	IsSameEvent:   hasSameUrl,
+	EventSelector: ".cff-event",
+	TimeFormat:    "Jan 2, 3:04pm",
+	GetDateTimeString: func(eventSelection *goquery.Selection) string {
+		dateStr := eventSelection.Find(".cff-date > .cff-start-date").Text()
+		return strings.Replace(dateStr, "Mrz", "Mär", -1)
+	},
+	TitleSelector: ".cff-event-title",
+	LinkBuilder: func(venue Venue, eventSelection *goquery.Selection) string {
+		id := eventSelection.AttrOr("id", "")
+		return fmt.Sprintf("%s#%s", venue.URL, id)
+	}}
+
+var mokkaConfig = HTMLConfig{
+	IsSameEvent:   hasSameUrl,
+	EventSelector: ".event-month > a",
+	TimeFormat:    "Mon. 02. Jan.",
+	GetDateTimeString: func(eventSelection *goquery.Selection) string {
+		return eventSelection.Find("div.date").Text()
+	},
+	TitleSelector: "div.title-section",
+	LinkBuilder: func(venue Venue, eventSelection *goquery.Selection) string {
+		return eventSelection.AttrOr("href", venue.URL)
+	}}
+
+var muehleHunzikenConfig = HTMLConfig{
+	IsSameEvent:   hasSameUrl,
+	EventSelector: ".event-list-item",
+	TimeFormat:    "02.01.2006",
+	GetDateTimeString: func(eventSelection *goquery.Selection) string {
+		dateStr := eventSelection.Find(".event-date").Text()
+		return dateStr[4:16]
+	},
+	TitleSelector: ".event-title",
+	LinkBuilder: func(venue Venue, eventSelection *goquery.Selection) string {
+		return eventSelection.Find("a").AttrOr("href", venue.URL)
+	}}
+
+// TODO
 // http://wartsaal-kaffee.ch/veranstaltungen/
 // http://www.cafete.ch/
 // http://www.schlachthaus.ch/spielplan/index.php
 // https://www.effinger.ch/events/
-// http://mokka.ch/programm/
-// https://www.lesamis.ch/events2/
-// http://www.muehlehunziken.ch
-// http://www.gaskessel.ch
 // http://dynamo.ch/veranstaltungen?field_event_type_tid=1&field_event_zeitraum_value_1[value][month]=1&field_event_zeitraum_value_1[value][year]=2018
 
 func RegisterAllHTMLCrawlers(st *Store) {
@@ -302,6 +337,9 @@ func RegisterAllHTMLCrawlers(st *Store) {
 	registerHTMLCrawler("dampfzentrale", dampfzentraleConfig, st)
 	registerHTMLCrawler("roessli", roessliConfig, st)
 	registerHTMLCrawler("sous-le-pont", souslepontConfig, st)
+	registerHTMLCrawler("les-amis", lesAmisConfig, st)
+	registerHTMLCrawler("mokka", mokkaConfig, st)
+	registerHTMLCrawler("muehle-hunziken", muehleHunzikenConfig, st)
 }
 
 func registerHTMLCrawler(shortName string, config HTMLConfig, st *Store) {
