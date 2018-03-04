@@ -20,12 +20,20 @@ CREATE TABLE venues (
 	shortname	TEXT UNIQUE
 );
 
-CREATE TABLE logs (
+CREATE TABLE updates (
 	id INTEGER PRIMARY KEY AUTOINCREMENT,
-	datetime  DATETIME,
-	store_errors  TEXT,
-	crawl_errors TEXT,
-	updates	   	TEXT
+	datetime  DATETIME DEFAULT CURRENT_TIMESTAMP,
+	event_id INTEGER NOT NULL, 
+	field TEXT NOT NULL,
+	old TEXT NOT NULL,
+	new TEXT NOT NULL
+);
+
+CREATE TABLE errors (
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	datetime  DATETIME DEFAULT CURRENT_TIMESTAMP,
+	crawler TEXT NOT NULL,
+	msg TEXT NOT NULL
 );
 `
 

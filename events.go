@@ -59,7 +59,7 @@ func diff(newEv Event, existingEv Event) (bool, Update) {
 
 	update := Update{ExistingEv: existingEv, UpdatedEv: newEv}
 	if !sameTime {
-		update.ChangedFields = append(update.ChangedFields, "time")
+		update.ChangedFields = append(update.ChangedFields, "date")
 	}
 	if !sameTitle {
 		update.ChangedFields = append(update.ChangedFields, "title")

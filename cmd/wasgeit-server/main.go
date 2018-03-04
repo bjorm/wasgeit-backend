@@ -73,11 +73,32 @@ func main() {
 			}
 		}
 
-		// TODO do updates
+		for _, update := range cs.Updates {
+			for _, field := range update.ChangedFields {
+				var newValue, oldValue interface{}
+				switch field {
+				case "title":
+					newValue = update.UpdatedEv.Title
+					oldValue = update.ExistingEv.Title
+					break;
+				case "date":
+					newValue = update.UpdatedEv.DateTime
+					oldValue = update.ExistingEv.DateTime
+				default:
+					panic("Update not implemented.")
+				}
+				store.UpdateEvent(update.ExistingEv.ID, field, newValue)
+				store.LogUpdate(update.ExistingEv.ID, field, oldValue, newValue)
+			}
+		}
 
-		log.Infof("Crawl errors: %s", crawlErrors)
-		log.Infof("Store errors: %s", storeErrors)
-		log.Infof("Updates: %+v", cs.Updates)
+		for _, err := range storeErrors {
+			store.LogError(cr, err)
+		}
+
+		log.Infof("Crawl errors: %d", len(crawlErrors))
+		log.Infof("Store errors: %d", len(storeErrors))
+		log.Infof("Updates: %d", len(cs.Updates))
 		log.Infof("New events stored: %d", len(cs.New)-len(storeErrors))
 	}
 

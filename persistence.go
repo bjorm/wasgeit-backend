@@ -39,9 +39,9 @@ func (st *Store) FindVenue(shortName string) (Venue, error) {
 	err := row.Scan(&v.ID, &v.Name, &v.ShortName, &v.URL)
 
 	if err == sql.ErrNoRows {
-		return Venue{}, fmt.Errorf("Could not find venue %q", shortName)
+		return Venue{}, fmt.Errorf("could not find venue %q", shortName)
 	} else if err != nil {
-		return Venue{}, fmt.Errorf("Error when querying venues: %q", err)
+		return Venue{}, fmt.Errorf("querying venues failed: %q", err)
 	}
 	return v, nil
 }
@@ -95,7 +95,7 @@ func (st *Store) SaveEvent(ev Event) error {
 
 	if err != nil {
 		tx.Rollback()
-		return fmt.Errorf("Failed to persists %v: %s", ev, err)
+		return fmt.Errorf("failed to persists %v: %s", ev, err)
 	}
 
 	tx.Commit()
@@ -160,4 +160,35 @@ func mapRowsToEvents(rows *sql.Rows) []Event {
 	}
 
 	return events
+}
+
+func (st *Store) UpdateEvent(id int64, columnName string, value interface{}) {
+	if columnName != "title" && columnName != "date" {
+		panic(fmt.Sprintf("Unknown column provided for update: %q", columnName))
+	}
+
+	updateQuery := fmt.Sprintf("UPDATE events SET %s = ? WHERE id = ?", columnName)
+	_, err := st.db.Exec(updateQuery, columnName, value, id)
+
+	if err != nil {
+		panic(err)
+	}
+}
+
+func (st *Store) LogUpdate(eventId int64, fieldName string, oldValue interface{}, newValue interface{}) {
+	_, err := st.db.Exec(
+		`INSERT INTO updates (event_id, field, old, new) VALUES (?, ?, ?, ?)`,
+		eventId, fieldName, oldValue, newValue)
+
+	if err != nil {
+		panic(err)
+	}
+}
+
+func (st *Store) LogError(cr Crawler, errToLog error) {
+	_, err := st.db.Exec(`INSERT INTO errors (crawler, msg) VALUES (?, ?)`, cr.Name(), errToLog.Error())
+
+	if err != nil {
+		panic(err)
+	}
 }
