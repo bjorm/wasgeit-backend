@@ -65,14 +65,6 @@ func main() {
 		cs := wasgeit.DedupeAndTrackChanges(existingEvents, newEvents, cr)
 		var storeErrors []error
 
-		for _, event := range cs.New {
-			storeErr := store.SaveEvent(event)
-
-			if storeErr != nil {
-				storeErrors = append(storeErrors, storeErr)
-			}
-		}
-
 		for _, update := range cs.Updates {
 			for _, field := range update.ChangedFields {
 				var newValue, oldValue interface{}
@@ -89,6 +81,14 @@ func main() {
 				}
 				store.UpdateEvent(update.ExistingEv.ID, field, newValue)
 				store.LogUpdate(update.ExistingEv.ID, field, oldValue, newValue)
+			}
+		}
+
+		for _, event := range cs.New {
+			storeErr := store.SaveEvent(event)
+
+			if storeErr != nil {
+				storeErrors = append(storeErrors, storeErr)
 			}
 		}
 

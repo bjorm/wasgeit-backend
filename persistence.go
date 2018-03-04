@@ -79,27 +79,11 @@ func (st *Store) FindEvents(crawlerName string) []Event {
 }
 
 func (st *Store) SaveEvent(ev Event) error {
-	tx, err := st.db.Begin()
-
-	if err != nil {
-		return err
-	}
-
-	stmt, err := tx.Prepare("insert into events(title, date, url, venue) values(?, ?, ?, ?)")
-	if err != nil {
-		return err
-	}
-
-	defer stmt.Close()
-	_, err = stmt.Exec(ev.Title, ev.DateTime, ev.URL, ev.Venue.ShortName)
-
-	if err != nil {
-		tx.Rollback()
-		return fmt.Errorf("failed to persists %v: %s", ev, err)
-	}
-
-	tx.Commit()
-	return nil
+	return st.inTransaction(`insert into events(title, date, url, venue) values(?, ?, ?, ?)`, func(stmt *sql.Stmt) (sql.Result, error) {
+		return stmt.Exec(ev.Title, ev.DateTime, ev.URL, ev.Venue.ShortName)
+	}, func(err error) error {
+		return fmt.Errorf("failed to persists event %v: %s", ev, err)
+	})
 }
 
 func (st *Store) GetEventsYetToHappen() []Event {
@@ -162,13 +146,18 @@ func mapRowsToEvents(rows *sql.Rows) []Event {
 	return events
 }
 
-func (st *Store) UpdateEvent(id int64, columnName string, value interface{}) {
-	if columnName != "title" && columnName != "date" {
-		panic(fmt.Sprintf("Unknown column provided for update: %q", columnName))
+func (st *Store) UpdateEvent(id int64, fieldName string, value interface{}) {
+	if fieldName != "title" && fieldName != "date" {
+		panic(fmt.Sprintf("Unknown column provided for update: %q", fieldName))
 	}
 
-	updateQuery := fmt.Sprintf("UPDATE events SET %s = ? WHERE id = ?", columnName)
-	_, err := st.db.Exec(updateQuery, columnName, value, id)
+	updateQuery := fmt.Sprintf("UPDATE events SET %s = ? WHERE id = ?", fieldName)
+
+	err := st.inTransaction(updateQuery, func(stmt *sql.Stmt) (sql.Result, error) {
+		return stmt.Exec(value, id)
+	}, func(err error) error {
+		return fmt.Errorf("failed to update %q in event %d to %q because of: %s", fieldName, id, value, err)
+	})
 
 	if err != nil {
 		panic(err)
@@ -176,9 +165,11 @@ func (st *Store) UpdateEvent(id int64, columnName string, value interface{}) {
 }
 
 func (st *Store) LogUpdate(eventId int64, fieldName string, oldValue interface{}, newValue interface{}) {
-	_, err := st.db.Exec(
-		`INSERT INTO updates (event_id, field, old, new) VALUES (?, ?, ?, ?)`,
-		eventId, fieldName, oldValue, newValue)
+	err := st.inTransaction(`INSERT INTO updates (event_id, field, old, new) VALUES (?, ?, ?, ?)`, func(stmt *sql.Stmt) (sql.Result, error) {
+		return stmt.Exec(eventId, fieldName, oldValue, newValue)
+	}, func(err error) error {
+		return fmt.Errorf("failed to update %q in event %d, oldValue=%s, newValue=%s", fieldName, eventId, oldValue, newValue)
+	})
 
 	if err != nil {
 		panic(err)
@@ -186,9 +177,37 @@ func (st *Store) LogUpdate(eventId int64, fieldName string, oldValue interface{}
 }
 
 func (st *Store) LogError(cr Crawler, errToLog error) {
-	_, err := st.db.Exec(`INSERT INTO errors (crawler, msg) VALUES (?, ?)`, cr.Name(), errToLog.Error())
+	err := st.inTransaction(`INSERT INTO errors (crawler, msg) VALUES (?, ?)`, func(stmt *sql.Stmt) (sql.Result, error) {
+		return stmt.Exec(cr.Name(), errToLog.Error())
+	}, func(err error) error {
+		return fmt.Errorf("failed to store error %q for %q", err, cr.Name())
+	})
 
 	if err != nil {
 		panic(err)
 	}
+}
+
+func (st *Store) inTransaction(query string, exec func(stmt *sql.Stmt) (sql.Result, error), createError func(err error) error) error {
+	tx, err := st.db.Begin()
+
+	if err != nil {
+		return err
+	}
+
+	stmt, err := tx.Prepare(query)
+	if err != nil {
+		return err
+	}
+
+	defer stmt.Close()
+	_, err = exec(stmt)
+
+	if err != nil {
+		tx.Rollback()
+		return createError(err)
+	}
+
+	tx.Commit()
+	return nil
 }
