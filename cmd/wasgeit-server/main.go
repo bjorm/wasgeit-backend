@@ -29,27 +29,38 @@ func main() {
 	}
 
 	wasgeit.RegisterAllHTMLCrawlers(store)
+	wasgeit.RegisterAllJsonCrawlers(store)
 
 	for _, cr := range wasgeit.GetCrawlers() {
 		log.Info(cr.Name())
 
-		err := cr.Fetch()
+		resp, err := http.Get(cr.URL())
+		if err != nil {
+			log.Errorf("Fetching failed: %s", err)
+			continue
+		}
+
+		err = cr.Read(resp.Body)
 
 		if err != nil {
-			log.Infof("Fetching of %q failed: %s", cr.Name, err)
+			log.Errorf("Reading failed: %s", err)
 			continue
 		}
 
 		newEvents, crawlErrors := cr.GetEvents()
 
 		if len(newEvents) == 0 {
-			log.Errorf("Crawler %q returned no new events", cr.Name())
+			log.Errorf("Crawler %q returned no events", cr.Name())
 			continue
 		}
 
 		// TODO use channel and goroutines for this
 
 		existingEvents := store.FindEvents(cr.Name())
+
+		if len(existingEvents) == 0 {
+			log.Warnf("No existing events found", cr.Name())
+		}
 
 		cs := wasgeit.DedupeAndTrackChanges(existingEvents, newEvents, cr)
 		var storeErrors []error

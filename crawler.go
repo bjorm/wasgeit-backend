@@ -2,19 +2,13 @@ package wasgeit
 
 import (
 	"fmt"
-	"time"
+	"io"
 )
-
-type RawEvent interface {
-	Title() string
-	DateTime() (time.Time, error)
-	URL() string
-}
 
 type Crawler interface {
 	URL() string
 	Name() string
-	Fetch() error
+	Read(io.ReadCloser) error
 	GetEvents() ([]Event, []error)
 	IsSame(ev1, ev2 Event) bool
 }

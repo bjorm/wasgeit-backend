@@ -24,11 +24,12 @@ func main() {
 	st.Connect()
 
 	wasgeit.RegisterAllHTMLCrawlers(&st)
+	wasgeit.RegisterAllJsonCrawlers(&st)
 
-	cr := wasgeit.GetCrawler(*crName).(*wasgeit.HTMLCrawler)
+	cr := wasgeit.GetCrawler(*crName)
 
 	var f *os.File
-	filename := fmt.Sprintf("%s%s.html", tmpDataDir, cr.Name())
+	filename := fmt.Sprintf("%s%s.%s", tmpDataDir, cr.Name(), inferExtension(cr))
 
 	if _, err := os.Stat(filename); err != nil {
 		downloadSite(filename, cr)
@@ -38,7 +39,7 @@ func main() {
 	panicOnError(err)
 	defer f.Close()
 
-	err = cr.LoadFrom(f)
+	err = cr.Read(f)
 	panicOnError(err)
 
 	events, errors := cr.GetEvents()
@@ -58,8 +59,19 @@ func main() {
 		fmt.Println(err)
 	}
 }
+func inferExtension(cr wasgeit.Crawler) string {
+	switch cr.(type) {
+	case *wasgeit.HTMLCrawler:
+		return  "html"
+	case *wasgeit.JsonCrawler:
+		return "json"
+	default:
+		return "txt"
 
-func downloadSite(filename string, cr *wasgeit.HTMLCrawler) {
+	}
+}
+
+func downloadSite(filename string, cr wasgeit.Crawler) {
 	resp, err := http.Get(cr.URL())
 	panicOnError(err)
 

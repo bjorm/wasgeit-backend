@@ -41,16 +41,7 @@ func (cr *HTMLCrawler) IsSame(ev1, ev2 Event) bool {
 	return cr.config.IsSameEvent(ev1, ev2)
 }
 
-func (cr *HTMLCrawler) Fetch() error {
-	dom, err := goquery.NewDocument(cr.venue.URL)
-	if err != nil {
-		return err
-	}
-	cr.dom = dom
-	return nil
-}
-
-func (cr *HTMLCrawler) LoadFrom(r io.Reader) error {
+func (cr *HTMLCrawler) Read(r io.ReadCloser) error {
 	dom, err := goquery.NewDocumentFromReader(r)
 	if err != nil {
 		return err
