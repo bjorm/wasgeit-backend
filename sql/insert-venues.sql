@@ -1,0 +1,22 @@
+BEGIN TRANSACTION;
+INSERT INTO `venues` (id,url,name,shortname) VALUES (1,'http://www.cafe-kairo.ch/kultur','Cafe Kairo','kairo'),
+  (2,'http://www.dachstock.ch','Dachstock','dachstock'),
+  (3,'http://www.turnhalle.ch','Turnhalle','turnhalle'),
+  (4,'http://brasserie-lorraine.ch/?post_type=tribe_events','Brasserie Lorraine','brasserie-lorraine'),
+  (5,'http://www.kofmehl.net','Kofmehl','kofmehl'),
+  (6,'http://www.kiff.ch/de/home.html?view=list','Kiff','kiff'),
+  (7,'http://www.coq-d-or.ch/','Coq d''Or','coq-d-or'),
+  (8,'http://www.isc-club.ch/','ISC','isc'),
+  (9,'https://www.mahogany.ch/konzerte','Mahogany Hall','mahogany-hall'),
+  (10,'http://www.dieheiterefahne.ch/de/hauptnavigation/start/programm-31.html','Heitere Fahne','heitere-fahne'),
+  (11,'http://www.onobern.ch/programm-bersicht','ONO Bern','ono'),
+  (12,'http://www.cafemarta.ch/musik','Cafe Marta','marta'),
+  (13,'http://www.bierhuebeli.ch/veranstaltungen/','Bierhübeli','bierhuebeli'),
+  (14,'http://dampfzentrale.ch/programm/','Dampfzentrale','dampfzentrale'),
+  (15,'https://www.souslepont-roessli.ch','Rössli','roessli'),
+  (16,'https://www.souslepont-roessli.ch','Sous le Pont','sous-le-pont'),
+  (17,'https://www.lesamis.ch/events2/','Les Amis','les-amis'),
+  (18,'http://mokka.ch/programm/','Mokka','mokka'),
+  (19,'http://www.muehlehunziken.ch','Mühle Hunziken','muehle-hunziken'),
+  (20,'http://www.gaskessel.ch/wp-json/wp/v2/posts?categories=9&status=publish&per_page=100','Gaskessel','gaskessel');
+COMMIT;

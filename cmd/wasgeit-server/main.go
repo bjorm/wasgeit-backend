@@ -21,7 +21,7 @@ func main() {
 	defer store.Close()
 
 	if *resetDb {
-		log.Info("Setting up DB tables..")
+		log.Info("Setting up DB")
 		dbErr = store.CreateTables()
 		if dbErr != nil {
 			panic(dbErr)
@@ -59,7 +59,7 @@ func main() {
 		existingEvents := store.FindEvents(cr.Name())
 
 		if len(existingEvents) == 0 {
-			log.Warnf("No existing events found", cr.Name())
+			log.Warnf("No existing events found")
 		}
 
 		cs := wasgeit.DedupeAndTrackChanges(existingEvents, newEvents, cr)
