@@ -12,6 +12,4 @@ RUN make server
 WORKDIR /wasgeit
 USER nobody
 
-VOLUME /wasgeit/db
-
 CMD ["wasgeit-server"]
