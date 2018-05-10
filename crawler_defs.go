@@ -10,6 +10,7 @@ import (
 )
 
 var (
+	dateRe = regexp.MustCompile(`(\d{2}.\d{2}.\d{2})`)
 	dateTimeRe = regexp.MustCompile(`(\d{1,2}.\d{1,2} \d{4}) - Doors: (\d{2}:\d{2})`)
 	timeRe     = regexp.MustCompile(`\d{2}:\d{2}`)
 	roessliRe  = regexp.MustCompile(`\d{1,2}. \pL{3} \d{4} \d{2}:\d{2}`)
@@ -112,8 +113,8 @@ var coqDorConfig = HTMLConfig{
 	EventSelector: "#main table:not(.shows)",
 	TimeFormat:    "02.01.0615:04",
 	GetDateTimeString: func(eventSelection *goquery.Selection) string {
-		rawDateTimeString := eventSelection.Find("td.list_first a").Text()
-		dateString := strings.Split(rawDateTimeString, ", ")[1]
+		rawDateTimeString := eventSelection.Find("td.list_first").Text()
+		dateString := dateRe.FindString(rawDateTimeString)
 		rawTimeString := eventSelection.Find("div.entry").Text()
 		timeString := timeRe.FindString(rawTimeString)
 		return dateString + timeString
