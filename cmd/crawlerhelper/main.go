@@ -28,6 +28,10 @@ func main() {
 
 	cr := wasgeit.GetCrawler(*crName)
 
+	if cr == nil {
+		panic(fmt.Sprintf("No crawler %q found", *crName))
+	}
+
 	var f *os.File
 	filename := fmt.Sprintf("%s%s.%s", tmpDataDir, cr.Name(), inferExtension(cr))
 
