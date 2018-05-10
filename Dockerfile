@@ -12,6 +12,8 @@ RUN dep ensure -vendor-only
 RUN make ${MAKE_TARGET}
 
 WORKDIR /wasgeit
-USER nobody
 
-CMD ["wasgeit-server"]
+RUN echo wasgeit-${MAKE_TARGET} > run.sh && chmod +x run.sh
+
+USER nobody
+CMD ["sh", "-c", "./run.sh"]
