@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	dateRe = regexp.MustCompile(`(\d{2}.\d{2}.\d{2})`)
+	dateRe     = regexp.MustCompile(`(\d{2}.\d{2}.\d{2})`)
 	dateTimeRe = regexp.MustCompile(`(\d{1,2}.\d{1,2} \d{4}) - Doors: (\d{2}:\d{2})`)
 	timeRe     = regexp.MustCompile(`\d{2}:\d{2}`)
 	roessliRe  = regexp.MustCompile(`\d{1,2}. \pL{3} \d{4} \d{2}:\d{2}`)
@@ -68,9 +68,9 @@ var brasserieLorraineConfig = HTMLConfig{
 	EventSelector: ".type-tribe_events",
 	TimeFormat:    "January 2",
 	GetDateTimeString: func(eventSelection *goquery.Selection) string {
-		rawDateTimeString := eventSelection.Find(".tribe-event-date-start").Text()
-		dateString := rawDateTimeString[0:11]
-		return strings.TrimSpace(dateString)
+		rawDateTimeString := eventSelection.Find(".tribe-event-schedule-details").Text()
+		tokens := strings.Split(rawDateTimeString, " @ ")
+		return strings.TrimSpace(tokens[0])
 	},
 	TitleSelector: ".tribe-events-list-event-title",
 	LinkBuilder: func(venue Venue, eventSelection *goquery.Selection) string {
