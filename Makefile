@@ -1,11 +1,16 @@
-.PHONY: server
+.PHONY: server crawler chelper container-server container-crawler
+
 server:
 	go install -i github.com/bjorm/wasgeit/cmd/wasgeit-server
 
-.PHONY: crawler
 crawler:
 	go install -i github.com/bjorm/wasgeit/cmd/wasgeit-crawler
 
-.PHONY: chelper
 chelper:
 	go install -i github.com/bjorm/wasgeit/cmd/crawlerhelper
+
+container-server: server
+	docker build --build-arg MAKE_TARGET=server -t wasgeit/backend .
+
+container-crawler: crawler
+	docker build --build-arg MAKE_TARGET=crawler -t wasgeit/crawler .
