@@ -9,7 +9,8 @@ import (
 )
 
 func main() {
-	resetDb := flag.Bool("setup-db", false, "Whether to create DB tables")
+	dropDb := flag.Bool("drop-db", false, "Whether to drop DB")
+	setupDb := flag.Bool("setup-db", false, "Whether to create DB tables")
 	flag.Parse()
 
 	store := &wasgeit.Store{}
@@ -20,8 +21,16 @@ func main() {
 	}
 	defer store.Close()
 
-	if *resetDb {
-		log.Info("Setting up DB")
+	if *dropDb {
+		log.Info("Dropping DB..")
+		dbErr = store.DropTables()
+		if dbErr != nil {
+			panic(dbErr)
+		}
+	}
+
+	if *setupDb {
+		log.Info("Setting up DB..")
 		dbErr = store.CreateTables()
 		if dbErr != nil {
 			panic(dbErr)
