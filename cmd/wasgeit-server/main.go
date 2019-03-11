@@ -7,7 +7,11 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+var BuildCommit string
+var BuildTime string
+
 func main() {
+	log.Info("Built from ", BuildCommit, " at ", BuildTime)
 	store := &wasgeit.Store{}
 	dbErr := store.Connect()
 
