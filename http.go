@@ -2,8 +2,8 @@ package wasgeit
 
 import (
 	"encoding/json"
-	"time"
 	"net/http"
+	"time"
 )
 
 type Server struct {
@@ -36,6 +36,8 @@ func (srv *Server) ServeAgenda(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
+	srv.addHeaders(w.Header())
+
 	w.Write(b)
 }
 
@@ -54,7 +56,14 @@ func (srv *Server) ServeNews(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
+	srv.addHeaders(w.Header())
+
 	w.Write(b)
+}
+
+func (srv *Server) addHeaders(h http.Header) {
+	h.Add("ETag", srv.st.ReadValue(LastCrawlTimeKey))
+	h.Add("Content-Type", "application/json;charset=utf-8")
 }
 
 func NewServer(st *Store) *Server {

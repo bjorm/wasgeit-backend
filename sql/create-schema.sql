@@ -31,3 +31,8 @@ CREATE TABLE errors (
   crawler TEXT NOT NULL,
   msg TEXT NOT NULL
 );
+
+CREATE TABLE keyvalue (
+  key   TEXT PRIMARY KEY,
+  value TEXT
+);

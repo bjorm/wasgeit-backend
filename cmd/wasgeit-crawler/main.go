@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"net/http"
+	"time"
 
 	"github.com/bjorm/wasgeit"
 	log "github.com/sirupsen/logrus"
@@ -111,4 +112,5 @@ func main() {
 		log.Infof("New events stored: %d", len(cs.New)-len(storeErrors))
 	}
 
+	store.UpdateValue(wasgeit.LastCrawlTimeKey, time.Now().Format(time.RFC3339))
 }

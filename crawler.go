@@ -5,6 +5,8 @@ import (
 	"io"
 )
 
+const LastCrawlTimeKey = "LAST_CRAWL_TIME"
+
 type Crawler interface {
 	URL() string
 	Name() string

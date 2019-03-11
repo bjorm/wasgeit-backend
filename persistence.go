@@ -188,6 +188,41 @@ func (st *Store) LogError(cr Crawler, errToLog error) {
 	}
 }
 
+func (st *Store) UpdateValue(key string, newValue string) {
+	err := st.inTransaction("INSERT OR REPLACE INTO keyvalue (key, value) VALUES (?, ?)", func(stmt *sql.Stmt) (sql.Result, error) {
+		return stmt.Exec(key, newValue)
+	}, func(err error) error {
+		return fmt.Errorf("failed to set value of %q to %q", key, newValue)
+	})
+
+	if err != nil {
+		panic(err)
+	}
+}
+
+func (st *Store) ReadValue(key string) string {
+	rows, err := st.db.Query("SELECT value FROM keyvalue WHERE key=(?)", key)
+	if err != nil {
+		panic(err)
+	}
+	defer rows.Close()
+
+	var value string
+
+	if rows.Next() {
+		err = rows.Scan(&value)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	if rows.Next() {
+		panic(fmt.Sprintf("Lookup of key %q in key value table returned more than one row", key))
+	}
+
+	return value
+}
+
 func (st *Store) inTransaction(query string, exec func(stmt *sql.Stmt) (sql.Result, error), createError func(err error) error) error {
 	tx, err := st.db.Begin()
 
