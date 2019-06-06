@@ -4,7 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
-	"net/http"
 	"os"
 
 	"github.com/bjorm/wasgeit"
@@ -14,7 +13,8 @@ const tmpDataDir = "./tmp/"
 
 func main() {
 	crName := flag.String("name", "", "Name of crawler to run")
-	flag.Parse()
+	config := wasgeit.GetConfiguration()
+	wasgeit.ConfigureLogging(config.LogLevel)
 
 	if *crName == "" {
 		panic("Please specifiy a valid crawler")
@@ -23,8 +23,10 @@ func main() {
 	st := wasgeit.Store{}
 	st.Connect()
 
+	browser := wasgeit.StartBrowser()
+	defer browser.Close()
+
 	wasgeit.RegisterAllHTMLCrawlers(&st)
-	wasgeit.RegisterAllJsonCrawlers(&st)
 
 	cr := wasgeit.GetCrawler(*crName)
 
@@ -36,14 +38,14 @@ func main() {
 	filename := fmt.Sprintf("%s%s.%s", tmpDataDir, cr.Name(), inferExtension(cr))
 
 	if _, err := os.Stat(filename); err != nil {
-		downloadSite(filename, cr)
+		downloadSite(filename, cr, browser)
 	}
 
-	f, err := os.Open(filename)
+	bytes, err := ioutil.ReadFile(filename)
 	panicOnError(err)
 	defer f.Close()
 
-	err = cr.Read(f)
+	err = cr.Read(string(bytes))
 	panicOnError(err)
 
 	events, errors := cr.GetEvents()
@@ -66,27 +68,22 @@ func main() {
 func inferExtension(cr wasgeit.Crawler) string {
 	switch cr.(type) {
 	case *wasgeit.HTMLCrawler:
-		return  "html"
-	case *wasgeit.JsonCrawler:
-		return "json"
+		return "html"
 	default:
 		return "txt"
 
 	}
 }
 
-func downloadSite(filename string, cr wasgeit.Crawler) {
-	resp, err := http.Get(cr.URL())
-	panicOnError(err)
-
-	body, err := ioutil.ReadAll(resp.Body)
+func downloadSite(filename string, cr wasgeit.Crawler, browser wasgeit.Browser) {
+	body, err := browser.GetHtml(cr.URL())
 	panicOnError(err)
 
 	newLocalFile, err := os.Create(filename)
 	panicOnError(err)
 	defer newLocalFile.Close()
 
-	_, err = newLocalFile.Write(body)
+	_, err = newLocalFile.WriteString(body)
 	panicOnError(err)
 }
 

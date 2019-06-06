@@ -2,7 +2,6 @@ package wasgeit
 
 import (
 	"fmt"
-	"io"
 	"strings"
 	"time"
 
@@ -41,8 +40,8 @@ func (cr *HTMLCrawler) IsSame(ev1, ev2 Event) bool {
 	return cr.config.IsSameEvent(ev1, ev2)
 }
 
-func (cr *HTMLCrawler) Read(r io.ReadCloser) error {
-	dom, err := goquery.NewDocumentFromReader(r)
+func (cr *HTMLCrawler) Read(body string) error {
+	dom, err := goquery.NewDocumentFromReader(strings.NewReader(body))
 	if err != nil {
 		return err
 	}

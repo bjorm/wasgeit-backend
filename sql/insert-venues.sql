@@ -18,5 +18,5 @@ INSERT INTO `venues` (id,url,name,shortname) VALUES (1,'http://www.cafe-kairo.ch
   (17,'https://www.lesamis.ch/events2/','Les Amis','les-amis'),
   (18,'http://mokka.ch/programm/','Mokka','mokka'),
   (19,'http://www.muehlehunziken.ch','Mühle Hunziken','muehle-hunziken'),
-  (20,'http://www.gaskessel.ch/wp-json/wp/v2/posts?categories=9&status=publish&per_page=100','Gaskessel','gaskessel');
+  (20,'https://gaskessel.ch','Gaskessel','gaskessel');
 COMMIT;

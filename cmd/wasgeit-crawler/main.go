@@ -1,8 +1,6 @@
 package main
 
 import (
-	"flag"
-	"net/http"
 	"time"
 
 	"github.com/bjorm/wasgeit"
@@ -10,9 +8,9 @@ import (
 )
 
 func main() {
-	dropDb := flag.Bool("drop-db", false, "Whether to drop DB")
-	setupDb := flag.Bool("setup-db", false, "Whether to create DB tables")
-	flag.Parse()
+	config := wasgeit.GetConfiguration()
+
+	wasgeit.ConfigureLogging(config.LogLevel)
 
 	store := &wasgeit.Store{}
 	dbErr := store.Connect()
@@ -22,7 +20,7 @@ func main() {
 	}
 	defer store.Close()
 
-	if *dropDb {
+	if config.DropDb {
 		log.Info("Dropping DB..")
 		dbErr = store.DropTables()
 		if dbErr != nil {
@@ -30,7 +28,7 @@ func main() {
 		}
 	}
 
-	if *setupDb {
+	if config.SetupDb {
 		log.Info("Setting up DB..")
 		dbErr = store.CreateTables()
 		if dbErr != nil {
@@ -39,18 +37,23 @@ func main() {
 	}
 
 	wasgeit.RegisterAllHTMLCrawlers(store)
-	wasgeit.RegisterAllJsonCrawlers(store)
+
+	browser := wasgeit.StartBrowser()
+	defer browser.Close()
 
 	for _, cr := range wasgeit.GetCrawlers() {
 		log.Info(cr.Name())
 
-		resp, err := http.Get(cr.URL())
+		body, err := browser.GetHtml(cr.URL())
+
+		log.Debug("Got site body from browser")
+
 		if err != nil {
 			log.Errorf("Fetching failed: %s", err)
 			continue
 		}
 
-		err = cr.Read(resp.Body)
+		err = cr.Read(body)
 
 		if err != nil {
 			log.Errorf("Reading failed: %s", err)

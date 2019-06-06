@@ -2,7 +2,6 @@ package wasgeit
 
 import (
 	"fmt"
-	"io"
 )
 
 const LastCrawlTimeKey = "LAST_CRAWL_TIME"
@@ -10,7 +9,7 @@ const LastCrawlTimeKey = "LAST_CRAWL_TIME"
 type Crawler interface {
 	URL() string
 	Name() string
-	Read(io.ReadCloser) error
+	Read(string) error
 	GetEvents() ([]Event, []error)
 	IsSame(ev1, ev2 Event) bool
 }
