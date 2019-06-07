@@ -6,13 +6,13 @@ LD_FLAGS=-ldflags "-X main.BuildCommit=$(BUILD_COMMIT) -X main.BuildTime=$(BUILD
 .PHONY: server crawler chelper container-server container-crawler
 
 server:
-	go install $(LD_FLAGS) github.com/bjorm/wasgeit/cmd/wasgeit-server
+	go build $(LD_FLAGS) github.com/bjorm/wasgeit/cmd/wasgeit-server
 
 crawler:
-	go install $(LD_FLAGS) github.com/bjorm/wasgeit/cmd/wasgeit-crawler
+	go build $(LD_FLAGS) github.com/bjorm/wasgeit/cmd/wasgeit-crawler
 
 chelper:
-	go install $(LD_FLAGS) github.com/bjorm/wasgeit/cmd/crawlerhelper
+	go build $(LD_FLAGS) github.com/bjorm/wasgeit/cmd/crawlerhelper
 
 container-server:
 	sudo docker build --compress --build-arg MAKE_TARGET=server -t wasgeit/server .
