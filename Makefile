@@ -11,7 +11,7 @@ server:
 crawler:
 	go build $(LD_FLAGS) github.com/bjorm/wasgeit/cmd/wasgeit-crawler
 
-chelper:
+helper:
 	go build $(LD_FLAGS) github.com/bjorm/wasgeit/cmd/crawlerhelper
 
 container-server:
