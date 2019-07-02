@@ -8,16 +8,19 @@ import (
 )
 
 type Config struct {
-	DropDb   bool
-	SetupDb  bool
-	LogLevel string
+	DropDb      bool
+	SetupDb     bool
+	LogLevel    string
+	ChromiumUrl string
 }
 
 func GetConfiguration() Config {
 	config := Config{}
 	flag.BoolVar(&config.DropDb, "drop-db", false, "Whether to drop DB")
 	flag.BoolVar(&config.SetupDb, "setup-db", false, "Whether to create DB tables")
-	flag.StringVar(&config.LogLevel, "log-level", "Info", "set log level.")
+	flag.StringVar(&config.LogLevel, "log-level", "Info", "Set log level")
+	flag.StringVar(&config.ChromiumUrl, "chromium-url", "http://chromium:9222",
+		"URL of chromium instance to connect to. Do not specify a path.")
 	flag.Parse()
 	return config
 }

@@ -21,9 +21,11 @@ func main() {
 	}
 
 	st := wasgeit.Store{}
-	st.Connect()
+	err := st.Connect()
 
-	browser := wasgeit.StartBrowser()
+	panicOnError(err)
+
+	browser := wasgeit.StartBrowser(config.ChromiumUrl)
 	defer browser.Close()
 
 	wasgeit.RegisterAllHTMLCrawlers(&st)

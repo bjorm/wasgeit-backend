@@ -8,6 +8,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"time"
 )
 
@@ -21,18 +22,29 @@ type WebsocketTargetJson struct {
 	Url                  string `json:"url"`
 }
 
-func StartBrowser() Browser {
-	remoteUrl := "http://localhost:9222/json"
-	wsUrl := getWsUrl(remoteUrl)
-	log.Debug("Got websocket URL ", wsUrl, " from ", remoteUrl)
+func StartBrowser(chromiumHost string) Browser {
+	hostUrl, err := url.Parse(chromiumHost)
+	if err != nil {
+		panic(err)
+	}
+
+	fullUrl, err := hostUrl.Parse("/json")
+
+	if err != nil {
+		panic(err)
+	}
+
+	wsUrl := getWsUrl(fullUrl)
+
+	log.Debug("Got websocket URL ", wsUrl, " from ", fullUrl)
 	ctxt, cancel := chromedp.NewRemoteAllocator(context.Background(), wsUrl)
 	log.Debug("Connected to remote chromium")
 
 	return Browser{ctxt: ctxt, cancel: cancel}
 }
 
-func getWsUrl(chromiumRemoteUrl string) string {
-	resp, err := http.Get(chromiumRemoteUrl)
+func getWsUrl(chromiumRemoteUrl *url.URL) string {
+	resp, err := http.Get(chromiumRemoteUrl.String())
 
 	if err != nil {
 		panic(err)
