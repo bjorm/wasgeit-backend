@@ -19,8 +19,8 @@ func GetConfiguration() Config {
 	flag.BoolVar(&config.DropDb, "drop-db", false, "Whether to drop DB")
 	flag.BoolVar(&config.SetupDb, "setup-db", false, "Whether to create DB tables")
 	flag.StringVar(&config.LogLevel, "log-level", "Info", "Set log level")
-	flag.StringVar(&config.ChromiumUrl, "chromium-url", "http://chromium:9222",
-		"URL of chromium instance to connect to. Do not specify a path.")
+	flag.StringVar(&config.ChromiumUrl, "chromium-host", "http://chromium:9222",
+		"Host of chromium instance to connect to. Do not specify a path.")
 	flag.Parse()
 	return config
 }
@@ -36,6 +36,7 @@ func ConfigureLogging(logLevel string) {
 	if level, err := log.ParseLevel(logLevel); err != nil {
 		panic(err)
 	} else {
+		log.Info("Set log level to ", level)
 		log.SetLevel(level)
 	}
 }

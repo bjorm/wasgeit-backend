@@ -3,10 +3,12 @@ package wasgeit
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/chromedp/cdproto/network"
 	"github.com/chromedp/chromedp"
 	log "github.com/sirupsen/logrus"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"net/url"
 	"time"
@@ -22,7 +24,7 @@ type WebsocketTargetJson struct {
 	Url                  string `json:"url"`
 }
 
-func StartBrowser(chromiumHost string) Browser {
+func StartBrowser(chromiumHost string) (Browser, error) {
 	hostUrl, err := url.Parse(chromiumHost)
 	if err != nil {
 		panic(err)
@@ -34,42 +36,86 @@ func StartBrowser(chromiumHost string) Browser {
 		panic(err)
 	}
 
-	wsUrl := getWsUrl(fullUrl)
+	wsUrl, err := getWsUrl(fullUrl)
 
-	log.Debug("Got websocket URL ", wsUrl, " from ", fullUrl)
+	if err != nil {
+		return Browser{}, err
+	}
+
+	log.Debugf("Got websocket URL %s from %q", wsUrl, fullUrl)
 	ctxt, cancel := chromedp.NewRemoteAllocator(context.Background(), wsUrl)
-	log.Debug("Connected to remote chromium")
+	log.Debugf("Connected to remote chromium at %s", wsUrl)
 
-	return Browser{ctxt: ctxt, cancel: cancel}
+	return Browser{ctxt: ctxt, cancel: cancel}, nil
 }
 
-func getWsUrl(chromiumRemoteUrl *url.URL) string {
+// replaceResolvedHostnameIfNeeded tries to resolve the hostname in the given URL in order to work around mitigations
+// introduced because of https://bugs.chromium.org/p/chromium/issues/detail?id=813540
+//
+// Chromium will return the error "Host header is specified and is not an IP address or localhost" if the
+// DevTools are connected to via a hostname other than localhost.
+func replaceResolvedHostnameIfNeeded(url *url.URL) error {
+	if url.Hostname() == "localhost" {
+		return nil
+	}
+
+	addresses, err := net.LookupHost(url.Hostname())
+
+	if err != nil {
+		return err
+	}
+
+	if len(addresses) != 1 {
+		log.Warnf("Warning: Host lookup of %q returned %v, picking first address\n", url.Hostname(), addresses)
+	}
+
+	port := url.Port()
+	url.Host = fmt.Sprintf("%s:%s", addresses[0], port)
+
+	log.Infof("Replaced hostname with %q\n", addresses[0])
+
+	return nil
+}
+
+func getWsUrl(chromiumRemoteUrl *url.URL) (string, error) {
+	err := replaceResolvedHostnameIfNeeded(chromiumRemoteUrl)
+
+	if err != nil {
+		return "", err
+	}
+
 	resp, err := http.Get(chromiumRemoteUrl.String())
 
 	if err != nil {
-		panic(err)
+		return "", err
 	}
 
 	bytes, err := ioutil.ReadAll(resp.Body)
 
 	if err != nil {
-		panic(err)
+		return "", err
+	}
+
+	err = resp.Body.Close()
+
+	if err != nil {
+		return "", err
 	}
 
 	targets := make([]WebsocketTargetJson, 0)
 	err = json.Unmarshal(bytes, &targets)
 
 	if err != nil {
-		panic(err)
+		return "", fmt.Errorf("could not parse %q as JSON, error was: %q", string(bytes), err)
 	}
 
 	for _, target := range targets {
 		if target.Url == "about:blank" { // we assume this is the default page
-			return target.WebSocketDebuggerUrl
+			return target.WebSocketDebuggerUrl, nil
 		}
 	}
 
-	panic("No default page found")
+	return "", fmt.Errorf("no default page found on %q", chromiumRemoteUrl.String())
 }
 
 func (b *Browser) GetHtml(url string) (string, error) {

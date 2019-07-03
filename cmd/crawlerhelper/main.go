@@ -25,7 +25,12 @@ func main() {
 
 	panicOnError(err)
 
-	browser := wasgeit.StartBrowser(config.ChromiumUrl)
+	browser, err := wasgeit.StartBrowser(config.ChromiumUrl)
+
+	if err != nil {
+		panic(err)
+	}
+
 	defer browser.Close()
 
 	wasgeit.RegisterAllHTMLCrawlers(&st)

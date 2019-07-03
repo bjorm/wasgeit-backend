@@ -38,7 +38,12 @@ func main() {
 
 	wasgeit.RegisterAllHTMLCrawlers(store)
 
-	browser := wasgeit.StartBrowser(config.ChromiumUrl)
+	browser, err := wasgeit.StartBrowser(config.ChromiumUrl)
+
+	if err != nil {
+		panic(err)
+	}
+
 	defer browser.Close()
 
 	for _, cr := range wasgeit.GetCrawlers() {
