@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/chromedp/cdproto/network"
 	"github.com/chromedp/chromedp"
 	log "github.com/sirupsen/logrus"
 	"io/ioutil"
@@ -130,7 +129,6 @@ func (b *Browser) GetHtml(url string) (string, error) {
 
 	var body string
 	if err := chromedp.Run(ctxt,
-		network.Enable(),
 		chromedp.Navigate(url),
 		chromedp.Sleep(time.Second),
 		chromedp.OuterHTML("html", &body),
@@ -142,6 +140,6 @@ func (b *Browser) GetHtml(url string) (string, error) {
 }
 
 func (b *Browser) Close() {
-	log.Debug("Closing chromium")
 	b.cancel()
+	log.Debug("Disconnected")
 }
