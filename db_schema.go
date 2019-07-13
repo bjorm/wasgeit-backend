@@ -5,14 +5,14 @@ import (
 	"io/ioutil"
 )
 
-func (st *Store) DropTables() error {
-	if st.db == nil {
+func (store *Store) DropTables() error {
+	if store.db == nil {
 		return fmt.Errorf("need to connect to DB first")
 	}
 
 	drop := readFile("sql/drop.sql")
 
-	_, err := st.db.Exec(drop)
+	_, err := store.db.Exec(drop)
 
 	if err != nil {
 		return err
@@ -21,21 +21,21 @@ func (st *Store) DropTables() error {
 	return nil
 }
 
-func (st *Store) CreateTables() error {
-	if st.db == nil {
+func (store *Store) CreateTables() error {
+	if store.db == nil {
 		return fmt.Errorf("need to connect to DB first")
 	}
 
 	schema := readFile("sql/create-schema.sql")
 	venues := readFile("sql/insert-venues.sql")
 
-	_, err := st.db.Exec(schema)
+	_, err := store.db.Exec(schema)
 
 	if err != nil {
 		return err
 	}
 
-	_, err = st.db.Exec(venues)
+	_, err = store.db.Exec(venues)
 
 	if err != nil {
 		return err

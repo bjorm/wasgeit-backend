@@ -3,6 +3,7 @@ package wasgeit
 import (
 	"database/sql"
 	"fmt"
+	log "github.com/sirupsen/logrus"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -13,10 +14,10 @@ type Store struct {
 	db *sql.DB
 }
 
-func (st *Store) Connect() error {
+func (store *Store) Connect() error {
 	var err error
 
-	st.db, err = sql.Open("sqlite3", "db/wasgeit.db")
+	store.db, err = sql.Open("sqlite3", "db/wasgeit.db")
 
 	if err != nil {
 		return err
@@ -25,16 +26,16 @@ func (st *Store) Connect() error {
 	return nil
 }
 
-func (st *Store) Close() error {
-	if st.db != nil {
-		return st.db.Close()
+func (store *Store) Close() error {
+	if store.db != nil {
+		return store.db.Close()
 	}
 
 	return nil
 }
 
-func (st *Store) FindVenue(shortName string) (Venue, error) {
-	row := st.db.QueryRow("SELECT id, name, shortname, url FROM venues WHERE shortname = ?", shortName)
+func (store *Store) FindVenue(shortName string) (Venue, error) {
+	row := store.db.QueryRow("SELECT id, name, shortname, url FROM venues WHERE shortname = ?", shortName)
 	var v Venue
 	err := row.Scan(&v.ID, &v.Name, &v.ShortName, &v.URL)
 
@@ -46,8 +47,8 @@ func (st *Store) FindVenue(shortName string) (Venue, error) {
 	return v, nil
 }
 
-func (st *Store) GetVenue(shortName string) Venue {
-	venue, err := st.FindVenue(shortName)
+func (store *Store) GetVenue(shortName string) Venue {
+	venue, err := store.FindVenue(shortName)
 
 	if err != nil {
 		panic(err)
@@ -55,8 +56,8 @@ func (st *Store) GetVenue(shortName string) Venue {
 	return venue
 }
 
-func (st *Store) FindEvents(crawlerName string) []Event {
-	rows, err := st.db.Query(`SELECT 
+func (store *Store) FindEvents(crawlerName string) []Event {
+	rows, err := store.db.Query(`SELECT 
 		events.id, 
 		events.title, 
 		events.date, 
@@ -78,16 +79,16 @@ func (st *Store) FindEvents(crawlerName string) []Event {
 	return mapRowsToEvents(rows)
 }
 
-func (st *Store) SaveEvent(ev Event) error {
-	return st.inTransaction(`insert into events(title, date, url, venue) values(?, ?, ?, ?)`, func(stmt *sql.Stmt) (sql.Result, error) {
+func (store *Store) SaveEvent(ev Event) error {
+	return store.inTransaction(`insert into events(title, date, url, venue) values(?, ?, ?, ?)`, func(stmt *sql.Stmt) (sql.Result, error) {
 		return stmt.Exec(ev.Title, ev.DateTime, ev.URL, ev.Venue.ShortName)
 	}, func(err error) error {
 		return fmt.Errorf("failed to persists event %v: %s", ev, err)
 	})
 }
 
-func (st *Store) GetEventsYetToHappen() []Event {
-	rows, err := st.db.Query(`SELECT 
+func (store *Store) GetEventsYetToHappen() []Event {
+	rows, err := store.db.Query(`SELECT 
 								events.id, 
 								events.title, 
 								events.date, 
@@ -108,8 +109,8 @@ func (st *Store) GetEventsYetToHappen() []Event {
 	return mapRowsToEvents(rows)
 }
 
-func (st *Store) GetEventsAddedDuringLastWeek() []Event {
-	rows, err := st.db.Query(`SELECT 
+func (store *Store) GetEventsAddedDuringLastWeek() []Event {
+	rows, err := store.db.Query(`SELECT 
 								events.id, 
 								events.title, 
 								events.date, 
@@ -146,14 +147,14 @@ func mapRowsToEvents(rows *sql.Rows) []Event {
 	return events
 }
 
-func (st *Store) UpdateEvent(id int64, fieldName string, value interface{}) {
+func (store *Store) UpdateEvent(id int64, fieldName string, value interface{}) {
 	if fieldName != "title" && fieldName != "date" {
 		panic(fmt.Sprintf("Unknown column provided for update: %q", fieldName))
 	}
 
 	updateQuery := fmt.Sprintf("UPDATE events SET %s = ? WHERE id = ?", fieldName)
 
-	err := st.inTransaction(updateQuery, func(stmt *sql.Stmt) (sql.Result, error) {
+	err := store.inTransaction(updateQuery, func(stmt *sql.Stmt) (sql.Result, error) {
 		return stmt.Exec(value, id)
 	}, func(err error) error {
 		return fmt.Errorf("failed to update %q in event %d to %q because of: %s", fieldName, id, value, err)
@@ -164,8 +165,8 @@ func (st *Store) UpdateEvent(id int64, fieldName string, value interface{}) {
 	}
 }
 
-func (st *Store) LogUpdate(eventId int64, fieldName string, oldValue interface{}, newValue interface{}) {
-	err := st.inTransaction(`INSERT INTO updates (event_id, field, old, new) VALUES (?, ?, ?, ?)`, func(stmt *sql.Stmt) (sql.Result, error) {
+func (store *Store) LogUpdate(eventId int64, fieldName string, oldValue interface{}, newValue interface{}) {
+	err := store.inTransaction(`INSERT INTO updates (event_id, field, old, new) VALUES (?, ?, ?, ?)`, func(stmt *sql.Stmt) (sql.Result, error) {
 		return stmt.Exec(eventId, fieldName, oldValue, newValue)
 	}, func(err error) error {
 		return fmt.Errorf("failed to update %q in event %d, oldValue=%s, newValue=%s", fieldName, eventId, oldValue, newValue)
@@ -176,8 +177,8 @@ func (st *Store) LogUpdate(eventId int64, fieldName string, oldValue interface{}
 	}
 }
 
-func (st *Store) LogError(cr Crawler, errToLog error) {
-	err := st.inTransaction(`INSERT INTO errors (crawler, msg) VALUES (?, ?)`, func(stmt *sql.Stmt) (sql.Result, error) {
+func (store *Store) LogError(cr Crawler, errToLog error) {
+	err := store.inTransaction(`INSERT INTO errors (crawler, msg) VALUES (?, ?)`, func(stmt *sql.Stmt) (sql.Result, error) {
 		return stmt.Exec(cr.Name(), errToLog.Error())
 	}, func(err error) error {
 		return fmt.Errorf("failed to store error %q for %q", err, cr.Name())
@@ -188,8 +189,8 @@ func (st *Store) LogError(cr Crawler, errToLog error) {
 	}
 }
 
-func (st *Store) UpdateValue(key string, newValue string) {
-	err := st.inTransaction("INSERT OR REPLACE INTO keyvalue (key, value) VALUES (?, ?)", func(stmt *sql.Stmt) (sql.Result, error) {
+func (store *Store) UpdateValue(key string, newValue string) {
+	err := store.inTransaction("INSERT OR REPLACE INTO keyvalue (key, value) VALUES (?, ?)", func(stmt *sql.Stmt) (sql.Result, error) {
 		return stmt.Exec(key, newValue)
 	}, func(err error) error {
 		return fmt.Errorf("failed to set value of %q to %q", key, newValue)
@@ -200,8 +201,8 @@ func (st *Store) UpdateValue(key string, newValue string) {
 	}
 }
 
-func (st *Store) ReadValue(key string) string {
-	rows, err := st.db.Query("SELECT value FROM keyvalue WHERE key=(?)", key)
+func (store *Store) ReadValue(key string) string {
+	rows, err := store.db.Query("SELECT value FROM keyvalue WHERE key=(?)", key)
 	if err != nil {
 		panic(err)
 	}
@@ -223,8 +224,8 @@ func (st *Store) ReadValue(key string) string {
 	return value
 }
 
-func (st *Store) inTransaction(query string, exec func(stmt *sql.Stmt) (sql.Result, error), createError func(err error) error) error {
-	tx, err := st.db.Begin()
+func (store *Store) inTransaction(query string, exec func(stmt *sql.Stmt) (sql.Result, error), createError func(err error) error) error {
+	tx, err := store.db.Begin()
 
 	if err != nil {
 		return err
@@ -239,10 +240,76 @@ func (st *Store) inTransaction(query string, exec func(stmt *sql.Stmt) (sql.Resu
 	_, err = exec(stmt)
 
 	if err != nil {
-		tx.Rollback()
+		rollbackErr := tx.Rollback()
+		if rollbackErr != nil {
+			return createError(fmt.Errorf("Both rollack (%v) and statement (%v) failed ", rollbackErr, err))
+		}
 		return createError(err)
 	}
 
-	tx.Commit()
+	err = tx.Commit()
+
+	if err != nil {
+		return createError(err)
+	}
+
 	return nil
+}
+
+func (store *Store) GetCurrentFestivals() ([]Festival, error) {
+	festivals := make([]Festival, 0)
+
+	rows, err := store.db.Query("SELECT id, url, location, name, date_start, date_end FROM venues WHERE placement = 'what-else'")
+
+	if err != nil {
+		return festivals, fmt.Errorf("error when getting festivals: %v", err)
+	}
+
+	for rows.Next() {
+		var festival Festival
+		err := rows.Scan(&festival.Id, &festival.Url, &festival.Location, &festival.Title, &festival.DateStart, &festival.DateEnd)
+
+		if err != nil {
+			return festivals, fmt.Errorf("error when getting festivals: %v", err)
+		}
+
+		openingTimes, err := store.getOpeningTimes(festival.Id)
+
+		if err != nil {
+			return festivals, fmt.Errorf("could not get opening times for festival %q: %v", festival.Title, err)
+		}
+
+		festival.OpeningTimes = openingTimes
+
+		festivals = append(festivals, festival)
+	}
+
+	return festivals, nil
+}
+
+func (store *Store) getOpeningTimes(venueId int64) ([]OpeningTime, error) {
+	rows, err := store.db.Query("SELECT days, time_start, time_end FROM opening_times WHERE venue_id = ?", venueId)
+
+	var openingTimes []OpeningTime
+
+	log.Tracef("Fetching opening times for festival with id=%d", venueId)
+
+	if err != nil {
+		return openingTimes, fmt.Errorf("error when getting opening times: %v", err)
+	}
+
+	for rows.Next() {
+		var openingTime OpeningTime
+		err := rows.Scan(&openingTime.Days, &openingTime.Start, &openingTime.End)
+
+		if err != nil {
+			return openingTimes, fmt.Errorf("error when getting opening times: %v", err)
+		}
+
+		openingTimes = append(openingTimes, openingTime)
+	}
+
+	log.Tracef("Found %d opening times for festival with id=%d", len(openingTimes), venueId)
+
+	return openingTimes, nil
 }

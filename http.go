@@ -2,12 +2,13 @@ package wasgeit
 
 import (
 	"encoding/json"
+	log "github.com/sirupsen/logrus"
 	"net/http"
 	"time"
 )
 
 type Server struct {
-	st *Store
+	store *Store
 }
 
 type JsonEvent struct {
@@ -22,8 +23,8 @@ func from(ev Event) JsonEvent {
 	return JsonEvent{Title: ev.Title, URL: ev.URL, DateTime: ev.DateTime, Venue: ev.Venue, Created: ev.Created}
 }
 
-func (srv *Server) ServeAgenda(w http.ResponseWriter, r *http.Request) {
-	events := srv.st.GetEventsYetToHappen()
+func (server *Server) ServeAgenda(w http.ResponseWriter, r *http.Request) {
+	events := server.store.GetEventsYetToHappen()
 	agenda := make(map[string][]interface{})
 
 	for _, ev := range events {
@@ -36,13 +37,14 @@ func (srv *Server) ServeAgenda(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	srv.addHeaders(w.Header())
+	server.setContentType(w.Header())
+	server.setEtag(w.Header())
 
 	w.Write(b)
 }
 
-func (srv *Server) ServeNews(w http.ResponseWriter, r *http.Request) {
-	events := srv.st.GetEventsAddedDuringLastWeek()
+func (server *Server) ServeNews(w http.ResponseWriter, r *http.Request) {
+	events := server.store.GetEventsAddedDuringLastWeek()
 	news := make(map[string][]interface{})
 
 	for _, ev := range events {
@@ -56,17 +58,39 @@ func (srv *Server) ServeNews(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	srv.addHeaders(w.Header())
+	server.setContentType(w.Header())
+	server.setEtag(w.Header())
 
 	w.Write(b)
 }
 
-func (srv *Server) addHeaders(h http.Header) {
-	h.Add("ETag", srv.st.ReadValue(LastCrawlTimeKey))
+func (server *Server) ServeFestivals(w http.ResponseWriter, r *http.Request) {
+	festivals, err := server.store.GetCurrentFestivals()
+
+	if err != nil {
+		log.Error(err)
+	}
+
+	b, err := json.Marshal(festivals)
+
+	if err != nil {
+		panic(err)
+	}
+
+	server.setContentType(w.Header())
+
+	w.Write(b)
+}
+
+func (server *Server) setContentType(h http.Header) {
 	h.Add("Content-Type", "application/json;charset=utf-8")
 }
 
+func (server *Server) setEtag(h http.Header) {
+	h.Add("ETag", server.store.ReadValue(LastCrawlTimeKey))
+}
+
 func NewServer(st *Store) *Server {
-	srv := Server{st: st}
+	srv := Server{store: st}
 	return &srv
 }
